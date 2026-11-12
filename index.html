@@ -20,8 +20,6 @@
   .region-label { font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 8.5px; font-weight: 500; fill: #2B3640; paint-order: stroke; stroke: #FFFFFF; stroke-width: 2px; stroke-linejoin: round; pointer-events: none; }
   .loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #3B4F63; }
   .hint { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); margin: 0; padding: 10px 18px; border-radius: 999px; background: #fff; color: #2B3640; font-size: 14px; font-weight: 500; white-space: nowrap; box-shadow: 0 4px 14px rgba(22,32,42,.12); pointer-events: none; animation: fadeIn .4s ease-out both; }
-  .throw-btn { position: absolute; right: 8px; bottom: 8px; height: 52px; padding: 0 24px; border: 0; border-radius: 999px; background: var(--accent); color: #fff; font: 700 16px 'Noto Sans KR', system-ui, sans-serif; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 6px 16px rgba(228,87,46,.35); }
-  .throw-btn:hover { background: #C9431E; }
   .overlay { position: absolute; width: 0; height: 0; pointer-events: none; }
   .gauge .ring { position: absolute; left: -36px; top: -36px; }
   .gauge p { position: absolute; left: 0; top: 42px; transform: translateX(-50%); margin: 0; padding: 4px 10px; border-radius: 999px; background: var(--navy); color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; }
@@ -66,10 +64,6 @@
   </button>
   <div class="loading" id="loading">지도를 불러오는 중…</div>
   <p class="hint" id="hint" hidden>지도를 꾹 눌러 힘을 모으고, 놓으면 던져요</p>
-  <button class="throw-btn" id="throwBtn">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg>
-    <span>아무 데나 던지기</span>
-  </button>
 
   <div class="overlay gauge" id="gauge" hidden aria-hidden="true">
     <svg class="ring" width="72" height="72" viewBox="0 0 72 72" fill="none">
@@ -117,7 +111,6 @@
 
 <script>
 (() => {
-  const LAND_ONLY = true;   // '아무 데나 던지기'는 육지에만 꽂히게
   const GRAVITY = 230;      // 힘이 0일 때 겨냥점보다 떨어지는 거리의 기준(지도 좌표)
   const SWEET = 0.72;       // 이 힘으로 던지면 겨냥한 곳에 꽂힘
   const CHARGE_MS = 1400;   // 게이지가 0→100→0 한 바퀴 도는 시간
@@ -296,18 +289,6 @@
     launch(aim, landFor(aim, p), p);
   });
 
-  function throwRandom() {
-    if (!data || busy) return;
-    const p = 0.4 + Math.random() * 0.55;
-    let land;
-    for (let k = 0; k < 600; k++) {
-      land = { x: Math.random() * data.w, y: Math.random() * data.h };
-      if (!LAND_ONLY || regionAt(land.x, land.y) >= 0) break;
-    }
-    const aim = { x: land.x + (Math.random() - 0.5) * 16, y: Math.max(6, land.y - (SWEET - p) * GRAVITY) };
-    launch(aim, land, p);
-  }
-  $('throwBtn').addEventListener('click', throwRandom);
   const close = () => { result.hidden = true; };
   $('againBtn').addEventListener('click', close);
   $('closeBtn').addEventListener('click', close);
