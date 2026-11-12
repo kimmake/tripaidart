@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Trip Dart</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#DCE7EC}
+a{color:#FFFFFF}a:hover{color:#FFFFFF}
+@keyframes dartFly{0%{transform:translate(-3px,-41px) translate(120px,420px) rotate(25deg) scale(2.4);opacity:0}15%{opacity:1}100%{transform:translate(-3px,-41px) rotate(0deg) scale(1);opacity:1}}
+@keyframes dartThunk{0%{transform:translate(-3px,-41px) rotate(-6deg)}40%{transform:translate(-3px,-41px) rotate(4deg)}100%{transform:translate(-3px,-41px) rotate(0deg)}}
+@keyframes ripple{0%{transform:translate(-50%,-50%) scale(.2);opacity:.9}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
+@keyframes fadeIn{0%{opacity:0}100%{opacity:1}}
+@keyframes popIn{0%{transform:scale(.7) translateY(20px);opacity:0}100%{transform:scale(1) translateY(0);opacity:1}}
+.dart-fly{animation:dartFly .7s cubic-bezier(.2,.7,.3,1) forwards}
+.dart-land{animation:dartThunk .35s ease-out forwards}
+.ripple{animation:ripple .9s ease-out forwards}
+.backdrop{animation:fadeIn .3s ease-out .45s both}
+.pop{animation:popIn .45s cubic-bezier(.2,1.3,.4,1) .45s both}
+.map-btn:focus-visible{outline:3px solid #E4572E;outline-offset:4px}
+.throw-btn:hover{background:#C9431E}
+.go-btn:hover{background:#0F2440}
+.ghost-btn:hover{background:#EEF2F3}
+.region-label{font-family:'Noto Sans KR',system-ui,sans-serif;font-size:8.5px;font-weight:500;fill:#2B3640;paint-order:stroke;stroke:#FFFFFF;stroke-width:2px;stroke-linejoin:round;pointer-events:none}
+@media (prefers-reduced-motion: reduce){.dart-fly,.dart-land,.ripple,.pop,.backdrop{animation-duration:1ms;animation-delay:0s}}
+</style>
+</helmet>
+<div style="position: relative; min-height: 100vh; box-sizing: border-box; padding: 24px 16px; font-family: 'Noto Sans KR', system-ui, sans-serif; color: #16202A; background: #DCE7EC; display: flex; align-items: center; justify-content: center">
+
+<main style="position: relative; width: 100%; max-width: 880px">
+<button class="map-btn" onClick="{{aim}}" aria-label="지도에서 누른 곳을 겨냥해 다트 던지기" style="display: block; width: 100%; padding: 0; margin: 0; border: 0; background: none; cursor: crosshair; border-radius: 12px">
+<svg viewBox="{{viewBox}}" style="display: block; width: 100%; height: auto" role="img" aria-label="대한민국 시·군 경계 지도">
+<rect x="0" y="0" width="{{mapW}}" height="{{mapH}}" fill="#DCE7EC"></rect>
+<sc-for list="{{regions}}" as="r" hint-placeholder-count="0">
+<path d="{{r.d}}" fill="{{r.fill}}" stroke="#A9B1B6" stroke-width="0.7" stroke-linejoin="round"></path>
+</sc-for>
+<path d="{{provD}}" fill="none" stroke="#1D2329" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"></path>
+<sc-if value="{{hasHit}}" hint-placeholder-val="{{ false }}">
+<path d="{{hit.d}}" fill="none" stroke="#A63A17" stroke-width="2.4" stroke-linejoin="round"></path>
+</sc-if>
+<sc-for list="{{labels}}" as="l" hint-placeholder-count="0">
+<text class="region-label" x="{{l.x}}" y="{{l.y}}" text-anchor="middle" dominant-baseline="middle">{{l.s}}</text>
+</sc-for>
+</svg>
+</button>
+
+<sc-if value="{{loading}}" hint-placeholder-val="{{ true }}">
+<div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #3B4F63">지도를 불러오는 중…</div>
+</sc-if>
+
+<button class="throw-btn" onClick="{{throwRandom}}" style="position: absolute; right: 8px; bottom: 8px; height: 52px; padding: 0 24px; border: 0; border-radius: 999px; background: #E4572E; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 6px 16px rgba(228,87,46,0.35)">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="5"></circle><circle cx="12" cy="12" r="1.5"></circle></svg>
+<span>다트 던지기</span>
+</button>
+
+<sc-if value="{{showFly}}" hint-placeholder-val="{{ false }}">
+<div aria-hidden="true" style="position: absolute; left: {{dart.left}}; top: {{dart.top}}; width: 0; height: 0; pointer-events: none">
+<div class="dart-fly" style="width: 44px; height: 44px; transform-origin: 3px 41px">
+<svg width="44" height="44" viewBox="0 0 44 44" fill="none"><path d="M3 41 L16 28" stroke="#3B4650" stroke-width="2.5" stroke-linecap="round"></path><path d="M14 30 L27 17" stroke="#1F3A5F" stroke-width="6" stroke-linecap="round"></path><path d="M27 17 L35 4 L36 15 Z M27 17 L40 9 L29 8 Z" fill="#E4572E" stroke="#A63A17" stroke-width="1.2" stroke-linejoin="round"></path></svg>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{showLand}}" hint-placeholder-val="{{ false }}">
+<div aria-hidden="true" style="position: absolute; left: {{dart.left}}; top: {{dart.top}}; width: 0; height: 0; pointer-events: none">
+<div class="ripple" style="position: absolute; left: 0; top: 0; width: 70px; height: 70px; border-radius: 50%; border: 3px solid #E4572E"></div>
+<div style="position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%; background: #A63A17; border: 2px solid #FFFFFF"></div>
+<div class="dart-land" style="width: 44px; height: 44px; transform-origin: 3px 41px">
+<svg width="44" height="44" viewBox="0 0 44 44" fill="none"><path d="M3 41 L16 28" stroke="#3B4650" stroke-width="2.5" stroke-linecap="round"></path><path d="M14 30 L27 17" stroke="#1F3A5F" stroke-width="6" stroke-linecap="round"></path><path d="M27 17 L35 4 L36 15 Z M27 17 L40 9 L29 8 Z" fill="#E4572E" stroke="#A63A17" stroke-width="1.2" stroke-linejoin="round"></path></svg>
+</div>
+</div>
+</sc-if>
+</main>
+
+<sc-if value="{{showResult}}" hint-placeholder-val="{{ false }}">
+<div class="backdrop" style="position: absolute; inset: 0; background: rgba(16,24,32,0.45); display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box">
+<div class="pop" role="dialog" aria-label="다트가 꽂힌 곳" aria-live="polite" style="position: relative; width: 100%; max-width: 380px; background: #FFFFFF; border-radius: 24px; padding: 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 24px 60px rgba(16,24,32,0.3)">
+<button class="ghost-btn" onClick="{{close}}" aria-label="결과 닫기" style="position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: #3B4650; cursor: pointer; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>
+</button>
+
+<sc-if value="{{hasHit}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<div style="height: 240px; border-radius: 16px; background: #FBF4EF; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box">
+<svg viewBox="{{hit.vb}}" style="width: 100%; height: 100%; overflow: visible" role="img" aria-label="{{hit.title}} 지역 모양">
+<path d="{{hit.d}}" fill="#000000" opacity="0.12" transform="{{hit.shadow}}"></path>
+<path d="{{hit.d}}" fill="#E4572E" stroke="#A63A17" stroke-width="{{hit.sw}}" stroke-linejoin="round"></path>
+</svg>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; text-align: center">
+<p style="margin: 0; font-size: 14px; color: #5B6772">{{hit.sub}}</p>
+<h2 style="margin: 0; font-size: 34px; line-height: 1.2; font-weight: 900; letter-spacing: -0.02em">{{hit.title}}</h2>
+</div>
+<a class="go-btn" href="https://triponline-topaz.vercel.app/" target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 56px; border-radius: 14px; background: #1F3A5F; color: #FFFFFF; font-size: 18px; font-weight: 700; text-decoration: none">
+<span>triponline</span>
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"></path><path d="M8 7h9v9"></path></svg>
+</a>
+</div>
+</sc-if>
+
+<sc-if value="{{isSea}}" hint-placeholder-val="{{ false }}">
+<div style="height: 200px; border-radius: 16px; background: #DCE7EC; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 16px; box-sizing: border-box">
+<p style="margin: 0; font-size: 18px; font-weight: 700; color: #1F3A5F">육지를 벗어났어요. 다시 던져 보세요.</p>
+</div>
+</sc-if>
+
+<button class="ghost-btn" onClick="{{throwRandom}}" style="height: 48px; border: 1px solid #C3CCD2; border-radius: 14px; background: #FFFFFF; color: #2B3640; font-family: inherit; font-size: 16px; font-weight: 500; cursor: pointer">다시 던지기</button>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"landOnly":{"editor":"boolean","default":true},"showNames":{"editor":"boolean","default":true},"aimSpread":{"editor":"range","default":18,"min":0,"max":80,"step":1,"unit":"px"},"$preview":{"width":1280,"height":980}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { data: null, phase: 'idle', target: null, hitIndex: -1 };
+    this.paths = null;
+    this.ctx = null;
+    this.timer = null;
+  }
+  componentDidMount() {
+    fetch('/_blob/a2c4e1fdc116c897ea4b007e4dc3ac7e')
+      .then((r) => r.json())
+      .then((data) => {
+        this.paths = data.regions.map((r) => new Path2D(r.d));
+        const c = document.createElement('canvas');
+        this.ctx = c.getContext('2d');
+        this.setState({ data: data });
+      })
+      .catch(() => {});
+  }
+  componentWillUnmount() { clearTimeout(this.timer); }
+  regionAt(x, y) {
+    if (!this.paths) return -1;
+    for (let i = 0; i < this.paths.length; i++) {
+      if (this.ctx.isPointInPath(this.paths[i], x, y, 'evenodd')) return i;
+    }
+    return -1;
+  }
+  launch(x, y) {
+    const data = this.state.data;
+    if (!data) return;
+    x = Math.max(0, Math.min(data.w, x));
+    y = Math.max(0, Math.min(data.h, y));
+    clearTimeout(this.timer);
+    this.setState({ phase: 'reset', hitIndex: -1 });
+    requestAnimationFrame(() => {
+      this.setState({ phase: 'fly', target: { x: x, y: y }, hitIndex: -1 });
+      this.timer = setTimeout(() => {
+        const i = this.regionAt(x, y);
+        this.setState({ phase: i >= 0 ? 'hit' : 'sea', hitIndex: i });
+      }, 700);
+    });
+  }
+  isMetro(r) { return !/[시군]$/.test(r.n); }
+  titleOf(r) { return this.isMetro(r) ? r.p : r.n; }
+  renderVals() {
+    const data = this.state.data;
+    const phase = this.state.phase;
+    const landOnly = this.props.landOnly ?? true;
+    const showNames = this.props.showNames ?? true;
+    const spread = this.props.aimSpread ?? 18;
+    const w = data ? data.w : 890;
+    const h = data ? data.h : 947;
+    const hitIndex = this.state.hitIndex;
+    const regions = data ? data.regions.map((r, i) => ({ d: r.d, fill: i === hitIndex ? '#E4572E' : '#FFFFFF' })) : [];
+    const labels = data && showNames ? data.regions.map((r) => ({ x: r.c[0], y: r.c[1], s: r.s })) : [];
+    let hit = null;
+    if (data && hitIndex >= 0) {
+      const r = data.regions[hitIndex];
+      const bw = r.b[2] - r.b[0], bh = r.b[3] - r.b[1];
+      const size = Math.max(bw, bh);
+      const pad = size * 0.08;
+      hit = {
+        d: r.d,
+        vb: (r.b[0] - pad) + ' ' + (r.b[1] - pad) + ' ' + (bw + pad * 2) + ' ' + (bh + pad * 2),
+        sw: (size / 160).toFixed(2),
+        shadow: 'translate(' + (size * 0.012).toFixed(2) + ' ' + (size * 0.02).toFixed(2) + ')',
+        title: this.titleOf(r),
+        sub: this.isMetro(r) ? '대한민국' : r.p
+      };
+    }
+    const t = this.state.target;
+    const dart = t ? { left: (t.x / w * 100) + '%', top: (t.y / h * 100) + '%' } : { left: '0%', top: '0%' };
+    return {
+      viewBox: '0 0 ' + w + ' ' + h,
+      mapW: w,
+      mapH: h,
+      regions: regions,
+      labels: labels,
+      provD: data ? data.prov : '',
+      loading: !data,
+      dart: dart,
+      showFly: phase === 'fly',
+      showLand: (phase === 'hit' || phase === 'sea' || phase === 'closed') && !!t,
+      showResult: phase === 'hit' || phase === 'sea',
+      isSea: phase === 'sea',
+      hasHit: !!hit,
+      hit: hit || { d: '', vb: '0 0 1 1', sw: '1', shadow: '', title: '', sub: '' },
+      close: () => this.setState({ phase: 'closed' }),
+      throwRandom: () => {
+        if (!data) return;
+        let x = 0, y = 0;
+        for (let k = 0; k < 600; k++) {
+          x = Math.random() * w;
+          y = Math.random() * h;
+          if (!landOnly || this.regionAt(x, y) >= 0) break;
+        }
+        this.launch(x, y);
+      },
+      aim: (e) => {
+        if (!data) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        let x = (e.clientX - rect.left) / rect.width * w;
+        let y = (e.clientY - rect.top) / rect.height * h;
+        if (!e.clientX && !e.clientY) { x = w / 2; y = h / 2; }
+        const a = Math.random() * Math.PI * 2;
+        const d = Math.sqrt(Math.random()) * spread * (w / Math.max(rect.width, 1));
+        this.launch(x + Math.cos(a) * d, y + Math.sin(a) * d);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
