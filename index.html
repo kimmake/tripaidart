@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trip Dart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root { --sea:#DCE7EC; --land:#FFFFFF; --border:#A9B1B6; --accent:#E4572E; --accent-dark:#A63A17; --navy:#1F3A5F; --ink:#16202A; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--sea); font-family: 'Noto Sans KR', system-ui, sans-serif; color: var(--ink); display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+  main { position: relative; width: 100%; max-width: 880px; }
+  main.shake { animation: shake .3s ease-out; }
+  .map-btn { display: block; width: 100%; padding: 0; margin: 0; border: 0; background: none; cursor: crosshair; border-radius: 12px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  .map-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+  #map { display: block; width: 100%; height: auto; }
+  .region { stroke: var(--border); stroke-width: .7; stroke-linejoin: round; fill: var(--land); }
+  .region.hit { fill: var(--accent); }
+  .region-label { font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 8.5px; font-weight: 500; fill: #2B3640; paint-order: stroke; stroke: #FFFFFF; stroke-width: 2px; stroke-linejoin: round; pointer-events: none; }
+  .loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #3B4F63; }
+  .hint { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); margin: 0; padding: 10px 18px; border-radius: 999px; background: #fff; color: #2B3640; font-size: 14px; font-weight: 500; white-space: nowrap; box-shadow: 0 4px 14px rgba(22,32,42,.12); pointer-events: none; animation: fadeIn .4s ease-out both; }
+  .overlay { position: absolute; width: 0; height: 0; pointer-events: none; }
+  .gauge .ring { position: absolute; left: -36px; top: -36px; }
+  .gauge p { position: absolute; left: 0; top: 42px; transform: translateX(-50%); margin: 0; padding: 4px 10px; border-radius: 999px; background: var(--navy); color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .fly-shadow { position: absolute; width: 34px; height: 12px; margin: -6px 0 0 -17px; border-radius: 50%; background: rgba(16,24,32,.6); filter: blur(2px); opacity: 0; pointer-events: none; }
+  .dart-body { width: 44px; height: 44px; transform-origin: 3px 41px; transform: translate(-3px,-41px); }
+  .landed .dart-body { animation: wobble .65s ease-out forwards; }
+  .landed .ripple { position: absolute; left: 0; top: 0; width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--accent); animation: ripple .9s ease-out forwards; }
+  .landed .burst { position: absolute; left: -30px; top: -30px; width: 60px; height: 60px; animation: burst .5s ease-out forwards; }
+  .landed .rest { position: absolute; left: -12px; top: -2px; width: 24px; height: 8px; border-radius: 50%; background: rgba(16,24,32,.3); filter: blur(1.5px); }
+  .landed .pin { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent-dark); border: 2px solid #fff; }
+  .dart:not(.landed) .ripple, .dart:not(.landed) .burst, .dart:not(.landed) .rest, .dart:not(.landed) .pin { display: none; }
+  .backdrop { position: fixed; inset: 0; background: rgba(16,24,32,.45); display: flex; align-items: center; justify-content: center; padding: 16px; animation: fadeIn .3s ease-out .75s both; }
+  .card { position: relative; width: 100%; max-width: 380px; background: #fff; border-radius: 24px; padding: 24px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 24px 60px rgba(16,24,32,.3); animation: popIn .45s cubic-bezier(.2,1.3,.4,1) .75s both; }
+  .close-btn { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: #3B4650; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .close-btn:hover, .ghost-btn:hover { background: #EEF2F3; }
+  .cutout { height: 240px; border-radius: 16px; background: #FBF4EF; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .cutout svg { width: 100%; height: 100%; overflow: visible; }
+  .names { display: flex; flex-direction: column; gap: 4px; text-align: center; }
+  .names p { margin: 0; font-size: 14px; color: #5B6772; }
+  .names h2 { margin: 0; font-size: 34px; line-height: 1.2; font-weight: 900; letter-spacing: -.02em; }
+  .names .shot { margin-top: 4px; font-size: 13px; }
+  .go-btn { display: flex; align-items: center; justify-content: center; gap: 8px; height: 56px; border-radius: 14px; background: var(--navy); color: #fff; font-size: 18px; font-weight: 700; text-decoration: none; }
+  .go-btn:hover { background: #0F2440; }
+  .sea { height: 200px; border-radius: 16px; background: var(--sea); display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; text-align: center; padding: 16px; }
+  .sea p { margin: 0; font-size: 18px; font-weight: 700; color: var(--navy); }
+  .sea .shot { font-size: 13px; font-weight: 400; color: #3B4F63; }
+  .ghost-btn { height: 48px; border: 1px solid #C3CCD2; border-radius: 14px; background: #fff; color: #2B3640; font: 500 16px 'Noto Sans KR', system-ui, sans-serif; cursor: pointer; }
+  [hidden] { display: none !important; }
+  @keyframes wobble { 0% { transform: translate(-3px,-41px) rotate(0) scale(1.08,.9); } 15% { transform: translate(-3px,-41px) rotate(-9deg); } 35% { transform: translate(-3px,-41px) rotate(6deg); } 55% { transform: translate(-3px,-41px) rotate(-3.5deg); } 75% { transform: translate(-3px,-41px) rotate(1.5deg); } 100% { transform: translate(-3px,-41px) rotate(0); } }
+  @keyframes shake { 0%,100% { transform: translate(0,0); } 20% { transform: translate(-4px,3px); } 40% { transform: translate(4px,-2px); } 60% { transform: translate(-2px,1px); } 80% { transform: translate(1px,-1px); } }
+  @keyframes burst { from { transform: scale(.3); opacity: 1; } to { transform: scale(1.25); opacity: 0; } }
+  @keyframes ripple { 0% { transform: translate(-50%,-50%) scale(.2); opacity: .9; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 0; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes popIn { from { transform: scale(.7) translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0s !important; } }
+</style>
+</head>
+<body>
+<main id="main">
+  <button class="map-btn" id="mapBtn" aria-label="지도를 누르고 있다가 놓으면 그 방향으로 다트 던지기">
+    <svg id="map" role="img" aria-label="대한민국 시·군 경계 지도"></svg>
+  </button>
+  <div class="loading" id="loading">지도를 불러오는 중…</div>
+  <p class="hint" id="hint" hidden>지도를 꾹 눌러 힘을 모으고, 놓으면 던져요</p>
+
+  <div class="overlay gauge" id="gauge" hidden aria-hidden="true">
+    <svg class="ring" width="72" height="72" viewBox="0 0 72 72" fill="none">
+      <circle cx="36" cy="36" r="26" stroke="#fff" stroke-width="8" opacity=".85"/>
+      <circle id="ring" cx="36" cy="36" r="26" stroke="#E4572E" stroke-width="8" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="163.4" transform="rotate(-90 36 36)"/>
+      <circle cx="10.5" cy="40.9" r="4" fill="#1F3A5F" stroke="#fff" stroke-width="1.5"/>
+      <circle cx="36" cy="36" r="3" fill="#1F3A5F"/>
+    </svg>
+    <p>놓으면 던져요</p>
+  </div>
+
+  <div class="fly-shadow" id="flyShadow" hidden></div>
+  <div class="overlay dart" id="dart" hidden aria-hidden="true">
+    <div class="ripple"></div>
+    <div class="burst"><svg width="60" height="60" viewBox="0 0 60 60" fill="none"><path d="M44 30H54M37 42.1L42 50.8M23 42.1L18 50.8M16 30H6M23 17.9L18 9.2M37 17.9L42 9.2" stroke="#A63A17" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+    <div class="rest"></div>
+    <div class="pin"></div>
+    <div class="dart-body" id="dartBody">
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none"><path d="M3 41 L16 28" stroke="#3B4650" stroke-width="2.5" stroke-linecap="round"/><path d="M14 30 L27 17" stroke="#1F3A5F" stroke-width="6" stroke-linecap="round"/><path d="M27 17 L35 4 L36 15 Z M27 17 L40 9 L29 8 Z" fill="#E4572E" stroke="#A63A17" stroke-width="1.2" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+</main>
+
+<div class="backdrop" id="result" hidden>
+  <div class="card" role="dialog" aria-label="다트가 꽂힌 곳" aria-live="polite">
+    <button class="close-btn" id="closeBtn" aria-label="결과 닫기">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg>
+    </button>
+    <div id="hitView" hidden>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="cutout">
+          <svg id="cutout" role="img"><path id="cutShadow" fill="#000" opacity=".12"/><path id="cutShape" fill="#E4572E" stroke="#A63A17" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="names"><p id="hitSub"></p><h2 id="hitTitle"></h2><p class="shot" id="hitShot"></p></div>
+        <a class="go-btn" href="https://triponline-topaz.vercel.app/" target="_blank" rel="noopener noreferrer">
+          <span>triponline</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="sea" id="seaView" hidden><p>육지를 벗어났어요. 다시 던져 보세요.</p><p class="shot" id="seaShot"></p></div>
+    <button class="ghost-btn" id="againBtn">다시 던지기</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const GRAVITY = 230;      // 힘이 0일 때 겨냥점보다 떨어지는 거리의 기준(지도 좌표)
+  const SWEET = 0.72;       // 이 힘으로 던지면 겨냥한 곳에 꽂힘
+  const CHARGE_MS = 1400;   // 게이지가 0→100→0 한 바퀴 도는 시간
+  const FLIGHT_MS = 900;
+  const KM_PER_UNIT = 111 / 170; // 지도 좌표 1 = 위도 1/170도
+  const NS = 'http://www.w3.org/2000/svg';
+  const $ = (id) => document.getElementById(id);
+  const main = $('main'), map = $('map'), mapBtn = $('mapBtn'), result = $('result');
+  const gauge = $('gauge'), ring = $('ring'), dart = $('dart'), dartBody = $('dartBody'), flyShadow = $('flyShadow');
+  let data = null, paths = [], els = [], ctx = null, raf = 0, charge = null, busy = false;
+  let hitOutline, aimG, dropLine;
+
+  const isMetro = (r) => !/[시군]$/.test(r.n);
+  const titleOf = (r) => isMetro(r) ? r.p : r.n;
+  const pct = (v, t) => (v / t * 100) + '%';
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const svgEl = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+  const place = (el, p) => { el.style.left = pct(clamp(p.x, 0, data.w), data.w); el.style.top = pct(clamp(p.y, 0, data.h), data.h); };
+
+  fetch('regions.json').then((r) => r.json()).then((d) => {
+    data = d;
+    map.setAttribute('viewBox', `0 0 ${d.w} ${d.h}`);
+    map.appendChild(svgEl('rect', { width: d.w, height: d.h, fill: '#DCE7EC' }));
+    const g = svgEl('g', {});
+    d.regions.forEach((r) => { const p = svgEl('path', { d: r.d, class: 'region' }); g.appendChild(p); els.push(p); });
+    map.appendChild(g);
+    map.appendChild(svgEl('path', { d: d.prov, fill: 'none', stroke: '#1D2329', 'stroke-width': 1.8, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+    hitOutline = svgEl('path', { fill: 'none', stroke: '#A63A17', 'stroke-width': 2.4, 'stroke-linejoin': 'round' });
+    map.appendChild(hitOutline);
+    const gl = svgEl('g', {});
+    d.regions.forEach((r) => { const t = svgEl('text', { class: 'region-label', x: r.c[0], y: r.c[1], 'text-anchor': 'middle', 'dominant-baseline': 'middle' }); t.textContent = r.s; gl.appendChild(t); });
+    map.appendChild(gl);
+    dropLine = svgEl('line', { stroke: '#1F3A5F', 'stroke-width': 1.6, 'stroke-dasharray': '4 4', 'stroke-linecap': 'round', visibility: 'hidden' });
+    map.appendChild(dropLine);
+    aimG = svgEl('g', { visibility: 'hidden' });
+    aimG.appendChild(svgEl('circle', { r: 8, fill: 'none', stroke: '#1F3A5F', 'stroke-width': 2 }));
+    aimG.appendChild(svgEl('circle', { r: 1.8, fill: '#1F3A5F' }));
+    map.appendChild(aimG);
+    paths = d.regions.map((r) => new Path2D(r.d));
+    ctx = document.createElement('canvas').getContext('2d');
+    $('loading').hidden = true;
+    $('hint').hidden = false;
+  });
+
+  function regionAt(x, y) {
+    if (x < 0 || y < 0 || x > data.w || y > data.h) return -1;
+    for (let i = 0; i < paths.length; i++) if (ctx.isPointInPath(paths[i], x, y, 'evenodd')) return i;
+    return -1;
+  }
+
+  function resetMarks() {
+    els.forEach((e) => e.classList.remove('hit'));
+    hitOutline.removeAttribute('d');
+    aimG.setAttribute('visibility', 'hidden');
+    dropLine.setAttribute('visibility', 'hidden');
+    dart.hidden = true; dart.classList.remove('landed');
+    main.classList.remove('shake');
+    result.hidden = true;
+    $('hint').hidden = true;
+  }
+
+  // 힘 p(0~1)로 aim을 향해 던졌을 때 실제로 꽂히는 곳: 힘이 모자라면 중력만큼 아래로, 넘치면 위로
+  function landFor(aim, p) {
+    const drop = (SWEET - p) * GRAVITY;
+    const r = (4 + 14 * p) * Math.sqrt(Math.random());
+    const a = Math.random() * Math.PI * 2;
+    return { x: aim.x + Math.cos(a) * r, y: aim.y + drop + Math.sin(a) * r * 0.6 };
+  }
+
+  function launch(aim, land, p) {
+    busy = true;
+    resetMarks();
+    aimG.setAttribute('transform', `translate(${aim.x} ${aim.y})`);
+    aimG.setAttribute('visibility', 'visible');
+    const S = { x: land.x + 150, y: data.h + 260 };
+    const pos = (t) => ({
+      x: S.x + (aim.x - S.x) * t + (land.x - aim.x) * t * t,
+      y: S.y + (aim.y - S.y) * t + (land.y - aim.y) * t * t - 70 * Math.sin(Math.PI * t)
+    });
+    dart.hidden = false;
+    flyShadow.hidden = false;
+    place(flyShadow, land);
+    const start = performance.now();
+    const step = () => {
+      const t = Math.min(1, (performance.now() - start) / FLIGHT_MS);
+      const q = pos(t);
+      dart.style.left = pct(q.x, data.w);
+      dart.style.top = pct(q.y, data.h);
+      const s = 1 + 2.2 * Math.pow(1 - t, 1.5);
+      dartBody.style.transform = `translate(-3px,-41px) rotate(${(-30 * (1 - t)).toFixed(1)}deg) scale(${s.toFixed(3)})`;
+      dartBody.style.opacity = Math.min(1, t * 6);
+      dartBody.style.filter = `blur(${(1.6 * (1 - t)).toFixed(2)}px)`;
+      const k = 1 - t;
+      flyShadow.style.transform = `translate(${(90 * k).toFixed(1)}px,${(50 * k).toFixed(1)}px) scale(${(1 + 1.6 * k).toFixed(2)})`;
+      flyShadow.style.opacity = (0.4 * t).toFixed(2);
+      if (t < 1) { raf = requestAnimationFrame(step); return; }
+      onLand(aim, land, p);
+    };
+    raf = requestAnimationFrame(step);
+  }
+
+  function onLand(aim, land, p) {
+    flyShadow.hidden = true;
+    dartBody.style.transform = ''; dartBody.style.opacity = ''; dartBody.style.filter = '';
+    place(dart, land);
+    dart.classList.add('landed');
+    main.classList.add('shake');
+    const lx = clamp(land.x, 0, data.w), ly = clamp(land.y, 0, data.h);
+    dropLine.setAttribute('x1', aim.x); dropLine.setAttribute('y1', aim.y);
+    dropLine.setAttribute('x2', lx); dropLine.setAttribute('y2', ly);
+    dropLine.setAttribute('visibility', 'visible');
+    const km = Math.round(Math.hypot(land.x - aim.x, land.y - aim.y) * KM_PER_UNIT);
+    const shot = `힘 ${Math.round(p * 100)}% · 겨냥한 곳에서 약 ${km}km ${land.y >= aim.y ? '아래로 떨어졌어요' : '위로 넘어갔어요'}`;
+    const i = regionAt(land.x, land.y);
+    $('hitView').hidden = i < 0;
+    $('seaView').hidden = i >= 0;
+    $('hitShot').textContent = shot;
+    $('seaShot').textContent = shot;
+    if (i >= 0) {
+      const r = data.regions[i];
+      els[i].classList.add('hit');
+      hitOutline.setAttribute('d', r.d);
+      const [x0, y0, x1, y1] = r.b, bw = x1 - x0, bh = y1 - y0, size = Math.max(bw, bh), pad = size * .08;
+      const cut = $('cutout');
+      cut.setAttribute('viewBox', `${x0 - pad} ${y0 - pad} ${bw + pad * 2} ${bh + pad * 2}`);
+      cut.setAttribute('aria-label', titleOf(r) + ' 지역 모양');
+      $('cutShape').setAttribute('d', r.d);
+      $('cutShape').setAttribute('stroke-width', (size / 160).toFixed(2));
+      $('cutShadow').setAttribute('d', r.d);
+      $('cutShadow').setAttribute('transform', `translate(${(size * .012).toFixed(2)} ${(size * .02).toFixed(2)})`);
+      $('hitTitle').textContent = titleOf(r);
+      $('hitSub').textContent = isMetro(r) ? '대한민국' : r.p;
+    }
+    result.hidden = false;
+    busy = false;
+  }
+
+  const toMap = (e, rect) => ({ x: (e.clientX - rect.left) / rect.width * data.w, y: (e.clientY - rect.top) / rect.height * data.h });
+  const power = () => (1 - Math.cos((performance.now() - charge.start) / CHARGE_MS * 2 * Math.PI)) / 2;
+  function chargeLoop() {
+    if (!charge) return;
+    ring.style.strokeDashoffset = 163.4 * (1 - power());
+    raf = requestAnimationFrame(chargeLoop);
+  }
+
+  mapBtn.addEventListener('pointerdown', (e) => {
+    if (!data || busy || e.button > 0) return;
+    e.preventDefault();
+    try { mapBtn.setPointerCapture(e.pointerId); } catch (err) {}
+    resetMarks();
+    const rect = map.getBoundingClientRect();
+    charge = { start: performance.now(), rect, aim: toMap(e, rect) };
+    place(gauge, charge.aim);
+    gauge.hidden = false;
+    cancelAnimationFrame(raf);
+    chargeLoop();
+  });
+  mapBtn.addEventListener('pointermove', (e) => {
+    if (!charge) return;
+    charge.aim = toMap(e, charge.rect);
+    place(gauge, charge.aim);
+  });
+  mapBtn.addEventListener('pointerup', () => {
+    if (!charge) return;
+    const p = power(), aim = charge.aim;
+    charge = null;
+    cancelAnimationFrame(raf);
+    gauge.hidden = true;
+    launch(aim, landFor(aim, p), p);
+  });
+  mapBtn.addEventListener('pointercancel', () => { charge = null; cancelAnimationFrame(raf); gauge.hidden = true; });
+  mapBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+  mapBtn.addEventListener('click', (e) => {
+    if (!data || busy || e.detail !== 0) return; // 키보드(Enter/Space)로 누른 경우만
+    const aim = { x: data.w / 2, y: data.h / 2 }, p = 0.55 + Math.random() * 0.35;
+    launch(aim, landFor(aim, p), p);
+  });
+
+  const close = () => { result.hidden = true; };
+  $('againBtn').addEventListener('click', close);
+  $('closeBtn').addEventListener('click', close);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+})();
+</script>
+</body>
+</html>
