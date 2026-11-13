@@ -19,10 +19,8 @@
   .region.hit { fill: var(--accent); }
   .region-label { font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 8.5px; font-weight: 500; fill: #2B3640; paint-order: stroke; stroke: #FFFFFF; stroke-width: 2px; stroke-linejoin: round; pointer-events: none; }
   .loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #3B4F63; }
-  .hint { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); margin: 0; padding: 10px 18px; border-radius: 999px; background: #fff; color: #2B3640; font-size: 14px; font-weight: 500; white-space: nowrap; box-shadow: 0 4px 14px rgba(22,32,42,.12); pointer-events: none; animation: fadeIn .4s ease-out both; }
   .overlay { position: absolute; width: 0; height: 0; pointer-events: none; }
   .gauge .ring { position: absolute; left: -36px; top: -36px; }
-  .gauge p { position: absolute; left: 0; top: 42px; transform: translateX(-50%); margin: 0; padding: 4px 10px; border-radius: 999px; background: var(--navy); color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; }
   .fly-shadow { position: absolute; width: 34px; height: 12px; margin: -6px 0 0 -17px; border-radius: 50%; background: rgba(16,24,32,.6); filter: blur(2px); opacity: 0; pointer-events: none; }
   .dart-body { width: 44px; height: 44px; transform-origin: 3px 41px; transform: translate(-3px,-41px); }
   .landed .dart-body { animation: wobble .65s ease-out forwards; }
@@ -63,7 +61,6 @@
     <svg id="map" role="img" aria-label="대한민국 시·군 경계 지도"></svg>
   </button>
   <div class="loading" id="loading">지도를 불러오는 중…</div>
-  <p class="hint" id="hint" hidden>지도를 꾹 눌러 힘을 모으고, 놓으면 던져요</p>
 
   <div class="overlay gauge" id="gauge" hidden aria-hidden="true">
     <svg class="ring" width="72" height="72" viewBox="0 0 72 72" fill="none">
@@ -72,7 +69,6 @@
       <circle cx="10.5" cy="40.9" r="4" fill="#1F3A5F" stroke="#fff" stroke-width="1.5"/>
       <circle cx="36" cy="36" r="3" fill="#1F3A5F"/>
     </svg>
-    <p>놓으면 던져요</p>
   </div>
 
   <div class="fly-shadow" id="flyShadow" hidden></div>
@@ -152,7 +148,6 @@
     paths = d.regions.map((r) => new Path2D(r.d));
     ctx = document.createElement('canvas').getContext('2d');
     $('loading').hidden = true;
-    $('hint').hidden = false;
   });
 
   function regionAt(x, y) {
@@ -169,7 +164,6 @@
     dart.hidden = true; dart.classList.remove('landed');
     main.classList.remove('shake');
     result.hidden = true;
-    $('hint').hidden = true;
   }
 
   // 힘 p(0~1)로 aim을 향해 던졌을 때 실제로 꽂히는 곳: 힘이 모자라면 중력만큼 아래로, 넘치면 위로
