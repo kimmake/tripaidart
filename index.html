@@ -21,7 +21,6 @@
   .loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #3B4F63; }
   .overlay { position: absolute; width: 0; height: 0; pointer-events: none; }
   .gauge .ring { position: absolute; left: -36px; top: -36px; }
-  .gauge p { position: absolute; left: 0; top: 42px; transform: translateX(-50%); margin: 0; padding: 4px 10px; border-radius: 999px; background: var(--navy); color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; }
   .fly-shadow { position: absolute; width: 34px; height: 12px; margin: -6px 0 0 -17px; border-radius: 50%; background: rgba(16,24,32,.6); filter: blur(2px); opacity: 0; pointer-events: none; }
   .dart-body { width: 44px; height: 44px; transform-origin: 3px 41px; transform: translate(-3px,-41px); }
   .landed .dart-body { animation: wobble .65s ease-out forwards; }
@@ -70,7 +69,6 @@
       <circle cx="10.5" cy="40.9" r="4" fill="#1F3A5F" stroke="#fff" stroke-width="1.5"/>
       <circle cx="36" cy="36" r="3" fill="#1F3A5F"/>
     </svg>
-    <p>놓으면 던져요</p>
   </div>
 
   <div class="fly-shadow" id="flyShadow" hidden></div>
