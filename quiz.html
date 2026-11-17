@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>맞춤 여행지 찾기 · Trip Dart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root { --sea:#DCE7EC; --land:#FFFFFF; --border:#A9B1B6; --accent:#E4572E; --accent-dark:#A63A17; --navy:#1F3A5F; --ink:#16202A; --muted:#5B6772; --line:#C3CCD2; --cream:#FBF4EF; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--sea); font-family: 'Noto Sans KR', system-ui, sans-serif; color: var(--ink); display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+  .card { width: 100%; max-width: 420px; background: #fff; border-radius: 24px; padding: 28px 24px; box-shadow: 0 24px 60px rgba(16,24,32,.18); display: flex; flex-direction: column; gap: 20px; }
+  .view { display: flex; flex-direction: column; gap: 20px; animation: popIn .4s cubic-bezier(.2,1.3,.4,1) both; }
+  [hidden] { display: none !important; }
+  .kicker { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .04em; color: var(--accent); }
+  h1 { margin: 0; font-size: 30px; line-height: 1.25; font-weight: 900; letter-spacing: -.02em; }
+  h2 { margin: 0; font-size: 22px; line-height: 1.4; font-weight: 700; letter-spacing: -.01em; }
+  .lead { margin: 0; font-size: 15px; line-height: 1.7; color: var(--muted); }
+  .progress { display: flex; align-items: center; gap: 12px; }
+  .bar { flex: 1; height: 6px; border-radius: 3px; background: #EEF2F3; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .35s ease; }
+  .count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .opt { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: #fff; color: var(--ink); font: 500 16px 'Noto Sans KR', system-ui, sans-serif; text-align: left; cursor: pointer; transition: background .15s, border-color .15s; }
+  .opt:hover { background: #F6F8F9; border-color: var(--navy); }
+  .opt.picked { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .opt .num { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--sea); color: var(--navy); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .opt.picked .num { background: #fff; }
+  .row { display: flex; gap: 10px; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; height: 56px; border: 0; border-radius: 14px; background: var(--navy); color: #fff; font: 700 18px 'Noto Sans KR', system-ui, sans-serif; text-decoration: none; cursor: pointer; }
+  .btn:hover { background: #0F2440; }
+  .btn.accent { background: var(--accent); }
+  .btn.accent:hover { background: var(--accent-dark); }
+  .ghost { display: flex; align-items: center; justify-content: center; height: 48px; border: 1px solid var(--line); border-radius: 14px; background: #fff; color: #2B3640; font: 500 16px 'Noto Sans KR', system-ui, sans-serif; text-decoration: none; cursor: pointer; }
+  .ghost:hover { background: #EEF2F3; }
+  .back { align-self: flex-start; height: 40px; padding: 0 4px; border: 0; background: none; color: var(--muted); font: 500 14px 'Noto Sans KR', system-ui, sans-serif; cursor: pointer; }
+  .back:disabled { visibility: hidden; }
+  .cutout { height: 220px; border-radius: 16px; background: var(--cream); display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .cutout svg { width: 100%; height: 100%; overflow: visible; }
+  .names { display: flex; flex-direction: column; gap: 4px; text-align: center; }
+  .names p { margin: 0; font-size: 14px; color: var(--muted); }
+  .names h2 { font-size: 34px; line-height: 1.2; font-weight: 900; letter-spacing: -.02em; }
+  .names .tag { margin-top: 6px; font-size: 15px; color: var(--ink); }
+  .section-title { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--muted); }
+  .reasons { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .reasons li { display: flex; gap: 10px; font-size: 15px; line-height: 1.6; }
+  .reasons li::before { content: ''; flex: none; width: 6px; height: 6px; margin-top: 10px; border-radius: 50%; background: var(--accent); }
+  .alts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .alt { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; border: 1px solid #E3E8EB; border-radius: 12px; background: #fff; cursor: pointer; font: inherit; color: inherit; }
+  .alt:hover { border-color: var(--navy); }
+  .alt svg { width: 56px; height: 56px; overflow: visible; }
+  .alt b { font-size: 14px; font-weight: 700; }
+  .alt span { font-size: 11px; color: var(--muted); }
+  .loading { text-align: center; font-size: 15px; color: #3B4F63; }
+  .opt:focus-visible, .btn:focus-visible, .ghost:focus-visible, .alt:focus-visible, .back:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  @keyframes popIn { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; } }
+</style>
+</head>
+<body>
+<main class="card">
+  <section class="view" id="introView">
+    <p class="kicker">TRIP DART · 맞춤 여행지 찾기</p>
+    <h1>나에게 맞는<br>국내 여행지는 어디일까?</h1>
+    <p class="lead">질문 6개에 답하면 다트 지도 속 시·군 가운데 당신의 여행 성향에 맞는 곳을 골라 드려요.</p>
+    <button class="btn accent" id="startBtn">검사 시작하기</button>
+    <a class="ghost" href="./">다트 던지러 가기</a>
+  </section>
+
+  <section class="view" id="quizView" hidden>
+    <div class="progress"><div class="bar"><i id="bar"></i></div><span class="count" id="count"></span></div>
+    <p class="kicker" id="qKicker"></p>
+    <h2 id="qTitle"></h2>
+    <div class="options" id="options"></div>
+    <button class="back" id="backBtn">← 이전 질문</button>
+  </section>
+
+  <section class="view" id="resultView" hidden>
+    <div class="cutout"><svg id="cutout" role="img"><path id="cutShadow" fill="#000" opacity=".12"/><path id="cutShape" fill="#E4572E" stroke="#A63A17" stroke-linejoin="round"/></svg></div>
+    <div class="names"><p id="rSub"></p><h2 id="rTitle"></h2><p class="tag" id="rTag"></p></div>
+    <div><p class="section-title">이런 성향이라서 골랐어요</p><ul class="reasons" id="reasons"></ul></div>
+    <div><p class="section-title">이런 곳도 잘 맞아요</p><div class="alts" id="alts"></div></div>
+    <button class="btn accent" id="retryBtn">다시 검사하기</button>
+    <a class="ghost" href="./">다트 던지러 가기</a>
+  </section>
+
+  <p class="loading" id="loading" hidden>지도를 불러오는 중…</p>
+</main>
+
+<script>
+(() => {
+  // ---------- 질문 ----------
+  // vec: 답변이 가리키는 성향(0~1). 축이 없는 답변은 해당 축에 영향을 주지 않습니다.
+  const QUESTIONS = [
+    { kicker: 'Q1 · 나에 대해', title: '성별을 알려주세요.', options: [
+      { label: '여성', vec: {}, gender: 'f' },
+      { label: '남성', vec: {}, gender: 'm' },
+      { label: '선택 안 함', vec: {}, gender: null } ] },
+    { kicker: 'Q2 · 풍경', title: '여행지에서 가장 보고 싶은 풍경은?', options: [
+      { label: '푸른 산과 숲', vec: { nature: 1, sea: .1, city: .1 }, reason: '산과 숲이 있는 풍경에서 마음이 편해지는 편이에요.' },
+      { label: '탁 트인 바다', vec: { sea: 1, nature: .6, city: .2 }, reason: '바다가 보여야 여행 온 기분이 나는 편이에요.' },
+      { label: '반짝이는 도시의 거리', vec: { city: 1, nature: .1, sea: .2 }, reason: '활기찬 도시의 거리를 걷는 걸 좋아해요.' },
+      { label: '오래된 골목과 유적', vec: { history: 1, city: .4 }, reason: '역사가 남아 있는 곳을 천천히 둘러보는 걸 좋아해요.' } ] },
+    { kicker: 'Q3 · 하루', title: '여행지에서의 하루를 어떻게 보내고 싶나요?', options: [
+      { label: '아무것도 안 하고 푹 쉬기', vec: { active: .1, city: .2 }, reason: '여행은 쉬러 가는 거라고 생각해요.' },
+      { label: '새로운 체험과 액티비티', vec: { active: 1, nature: .7 }, reason: '가만히 있기보다 활동적으로 즐기는 걸 좋아해요.' },
+      { label: '맛집과 카페 투어', vec: { food: 1, city: .7, active: .3 }, reason: '맛집과 카페를 찾아다니는 게 여행의 재미예요.' },
+      { label: '명소를 하나씩 둘러보기', vec: { history: .7, active: .4 }, reason: '그 지역의 대표 명소는 꼭 챙겨 보는 편이에요.' } ] },
+    { kicker: 'Q4 · 음식', title: '여행에서 음식은 얼마나 중요한가요?', options: [
+      { label: '음식 때문에 여행지를 고르기도 해요', vec: { food: 1 }, reason: '먹으러 떠나는 여행을 좋아해요.' },
+      { label: '한 끼 정도는 제대로 먹고 싶어요', vec: { food: .55 }, reason: '하루 한 끼는 제대로 챙기는 편이에요.' },
+      { label: '배만 채우면 괜찮아요', vec: { food: .15 }, reason: '음식보다 풍경과 경험이 더 중요해요.' } ] },
+    { kicker: 'Q5 · 일정', title: '이번 여행은 얼마나 다녀올 수 있나요?', options: [
+      { label: '당일치기', vec: { far: .1 }, reason: '가볍게 다녀올 수 있는 거리를 좋아해요.' },
+      { label: '1박 2일', vec: { far: .5 }, reason: '1박 2일이면 충분히 즐길 수 있다고 생각해요.' },
+      { label: '2박 이상, 멀리', vec: { far: .9 }, reason: '조금 멀어도 확실히 다른 곳으로 떠나고 싶어해요.' } ] },
+    { kicker: 'Q6 · 동행', title: '이번엔 누구와 함께 떠나요?', options: [
+      { label: '혼자서', vec: { active: .4, history: .6 }, reason: '혼자만의 속도로 걷는 여행이 편해요.' },
+      { label: '친구와', vec: { active: .8, food: .7 }, reason: '함께 웃을 일이 많은 여행지를 좋아해요.' },
+      { label: '연인과', vec: { sea: .7, food: .7 }, reason: '둘이서 오래 기억할 장면을 중요하게 생각해요.' },
+      { label: '가족과', vec: { active: .35, nature: .6 }, reason: '모두가 편안한 속도의 여행을 원해요.' } ] }
+  ];
+
+  // ---------- 여행지 ----------
+  // p/n: regions.json의 도(p)·시군(n) 이름. a: 성향 점수(0~1, 임시값). far: 서울에서 체감 거리.
+  const DESTS = [
+    { p: '서울특별시', n: '서울', tag: '궁궐, 한강, 골목 맛집이 한 도시에', a: { nature: .15, sea: 0, food: .9, active: .5, city: 1, history: .7, far: 0 } },
+    { p: '부산광역시', n: '부산', tag: '해운대와 광안리, 돼지국밥의 바다 도시', a: { nature: .3, sea: .95, food: .9, active: .55, city: .85, history: .35, far: .75 } },
+    { p: '부산광역시', n: '기장군', tag: '바다 위 해동용궁사와 롯데월드 어드벤처 부산', a: { nature: .5, sea: .9, food: .6, active: .6, city: .35, history: .4, far: .75 } },
+    { p: '인천광역시', n: '인천', tag: '차이나타운과 월미도, 가까운 바다', a: { nature: .2, sea: .6, food: .75, active: .4, city: .75, history: .5, far: .05 } },
+    { p: '인천광역시', n: '강화군', tag: '고인돌과 성곽이 남은 역사의 섬', a: { nature: .6, sea: .5, food: .5, active: .35, city: .1, history: .9, far: .15 } },
+    { p: '경기도', n: '수원시', tag: '수원화성 성곽길과 통닭거리', a: { nature: .2, sea: 0, food: .75, active: .45, city: .7, history: .85, far: .05 } },
+    { p: '경기도', n: '용인시', tag: '에버랜드와 한국민속촌이 있는 곳', a: { nature: .4, sea: 0, food: .45, active: .75, city: .5, history: .45, far: .05 } },
+    { p: '경기도', n: '가평군', tag: '남이섬과 북한강 수상레저', a: { nature: .85, sea: .1, food: .5, active: .75, city: .1, history: .1, far: .15 } },
+    { p: '경기도', n: '양평군', tag: '두물머리 물안개와 강변 카페', a: { nature: .8, sea: 0, food: .55, active: .3, city: .15, history: .2, far: .1 } },
+    { p: '강원특별자치도', n: '춘천시', tag: '닭갈비와 소양강, 레고랜드 코리아', a: { nature: .65, sea: 0, food: .8, active: .55, city: .4, history: .2, far: .25 } },
+    { p: '강원특별자치도', n: '강릉시', tag: '경포 바다와 안목 커피거리, 초당순두부', a: { nature: .55, sea: .9, food: .8, active: .4, city: .45, history: .45, far: .45 } },
+    { p: '강원특별자치도', n: '속초시', tag: '설악산과 속초관광수산시장', a: { nature: .9, sea: .8, food: .75, active: .65, city: .3, history: .2, far: .45 } },
+    { p: '강원특별자치도', n: '양양군', tag: '서핑 보드를 들고 걷는 바다 마을', a: { nature: .7, sea: 1, food: .45, active: .95, city: .2, history: .15, far: .45 } },
+    { p: '강원특별자치도', n: '평창군', tag: '2018 동계올림픽의 스키 리조트와 대관령 목장', a: { nature: .95, sea: 0, food: .4, active: .9, city: .1, history: .15, far: .4 } },
+    { p: '강원특별자치도', n: '정선군', tag: '레일바이크와 정선 5일장', a: { nature: .9, sea: 0, food: .5, active: .7, city: .05, history: .35, far: .45 } },
+    { p: '강원특별자치도', n: '인제군', tag: '내린천 래프팅과 자작나무 숲', a: { nature: .95, sea: 0, food: .3, active: .95, city: 0, history: .1, far: .4 } },
+    { p: '충청북도', n: '단양군', tag: '패러글라이딩과 도담삼봉, 만천하스카이워크', a: { nature: .85, sea: 0, food: .45, active: .9, city: .1, history: .4, far: .35 } },
+    { p: '충청남도', n: '공주시', tag: '공산성과 무령왕릉, 백제의 옛 수도', a: { nature: .4, sea: 0, food: .45, active: .3, city: .2, history: 1, far: .3 } },
+    { p: '충청남도', n: '태안군', tag: '안면도 해변과 서해의 노을', a: { nature: .75, sea: .9, food: .6, active: .45, city: .05, history: .1, far: .3 } },
+    { p: '충청남도', n: '보령시', tag: '대천해수욕장과 머드축제', a: { nature: .55, sea: .9, food: .55, active: .7, city: .2, history: .1, far: .35 } },
+    { p: '전북특별자치도', n: '전주시', tag: '한옥마을 골목과 비빔밥', a: { nature: .2, sea: 0, food: 1, active: .3, city: .6, history: .9, far: .5 } },
+    { p: '전북특별자치도', n: '군산시', tag: '근대 거리와 오래된 빵집', a: { nature: .2, sea: .4, food: .8, active: .25, city: .45, history: .85, far: .5 } },
+    { p: '전라남도', n: '담양군', tag: '죽녹원 대숲과 메타세쿼이아길', a: { nature: .9, sea: 0, food: .6, active: .3, city: .05, history: .4, far: .65 } },
+    { p: '전라남도', n: '여수시', tag: '여수 밤바다와 해상케이블카', a: { nature: .5, sea: .95, food: .85, active: .5, city: .5, history: .3, far: .8 } },
+    { p: '전라남도', n: '순천시', tag: '순천만습지 갈대밭과 국가정원', a: { nature: .95, sea: .4, food: .6, active: .35, city: .25, history: .3, far: .75 } },
+    { p: '전라남도', n: '보성군', tag: '초록 계단처럼 펼쳐진 녹차밭', a: { nature: .9, sea: .3, food: .5, active: .25, city: 0, history: .2, far: .8 } },
+    { p: '경상북도', n: '경주시', tag: '불국사와 대릉원, 황리단길', a: { nature: .35, sea: .2, food: .65, active: .45, city: .35, history: 1, far: .65 } },
+    { p: '경상북도', n: '안동시', tag: '하회마을과 안동찜닭', a: { nature: .45, sea: 0, food: .7, active: .25, city: .15, history: .95, far: .55 } },
+    { p: '경상북도', n: '포항시', tag: '호미곶 해돋이와 죽도시장', a: { nature: .45, sea: .9, food: .75, active: .5, city: .5, history: .2, far: .7 } },
+    { p: '경상북도', n: '울릉군', tag: '배를 타고 가는 화산섬 해안길', a: { nature: 1, sea: 1, food: .5, active: .85, city: 0, history: .2, far: 1 } },
+    { p: '경상남도', n: '통영시', tag: '케이블카와 루지, 동피랑 벽화마을', a: { nature: .55, sea: .9, food: .8, active: .75, city: .35, history: .45, far: .85 } },
+    { p: '경상남도', n: '거제시', tag: '바람의 언덕과 외도 보타니아', a: { nature: .75, sea: .95, food: .55, active: .55, city: .2, history: .15, far: .85 } },
+    { p: '경상남도', n: '남해군', tag: '다랭이마을과 독일마을', a: { nature: .85, sea: .85, food: .5, active: .35, city: 0, history: .35, far: .85 } },
+    { p: '대구광역시', n: '대구', tag: '근대골목과 막창, 서문시장', a: { nature: .15, sea: 0, food: .85, active: .4, city: .85, history: .55, far: .6 } },
+    { p: '대전광역시', n: '대전', tag: '빵 하나 사러 가는 도시', a: { nature: .2, sea: 0, food: .85, active: .3, city: .75, history: .2, far: .35 } },
+    { p: '제주특별자치도', n: '제주시', tag: '함덕·협재 해변과 동문시장', a: { nature: .8, sea: .95, food: .75, active: .6, city: .35, history: .25, far: .95 } },
+    { p: '제주특별자치도', n: '서귀포시', tag: '성산일출봉과 올레길, 헬로키티아일랜드', a: { nature: .9, sea: .95, food: .65, active: .7, city: .2, history: .25, far: .95 } }
+  ];
+
+  // ---------- 성별 보정 ----------
+  // 여성: 캐릭터 테마파크·캐릭터 숍이 있는 곳(CUTE)을, 남성: 액티비티 점수(a.active)가 높은 곳을 위로 올립니다.
+  // 점수와 가중치는 임시값입니다. 설문 데이터가 생기면 조정하세요.
+  const CUTE = {
+    '경기도/용인시': 1,          // 에버랜드
+    '서울특별시/서울': .9,        // 롯데월드, 캐릭터 플래그십 스토어
+    '강원특별자치도/춘천시': .8,  // 레고랜드 코리아
+    '부산광역시/기장군': .8,      // 롯데월드 어드벤처 부산
+    '제주특별자치도/서귀포시': .7 // 헬로키티아일랜드
+  };
+  const GENDER_W = { f: .8, m: 1.2 };
+  const genderBias = (g, d) => g === 'f' ? GENDER_W.f * (CUTE[d.p + '/' + d.n] || 0)
+    : g === 'm' ? GENDER_W.m * Math.max(0, d.a.active - .5) * 2 : 0;
+
+  const AXES = ['nature', 'sea', 'food', 'active', 'city', 'history', 'far'];
+  const W = { nature: 1.2, sea: 1.3, food: 1.1, active: 1.1, city: 1.1, history: 1, far: .8 };
+
+  const $ = (id) => document.getElementById(id);
+  const views = ['introView', 'quizView', 'resultView'];
+  let regions = null, qi = 0, answers = [], locked = false;
+
+  const show = (id) => views.forEach((v) => { $(v).hidden = v !== id; });
+  const isMetro = (r) => !/[시군]$/.test(r.n);
+  const regionOf = (d) => regions.find((r) => r.p === d.p && r.n === d.n);
+
+  function drawShape(svg, shape, shadow, r) {
+    const [x0, y0, x1, y1] = r.b, bw = x1 - x0, bh = y1 - y0, size = Math.max(bw, bh), pad = size * .08;
+    svg.setAttribute('viewBox', `${x0 - pad} ${y0 - pad} ${bw + pad * 2} ${bh + pad * 2}`);
+    shape.setAttribute('d', r.d);
+    shape.setAttribute('stroke-width', (size / 160).toFixed(2));
+    if (shadow) {
+      shadow.setAttribute('d', r.d);
+      shadow.setAttribute('transform', `translate(${(size * .012).toFixed(2)} ${(size * .02).toFixed(2)})`);
+    }
+  }
+
+  function renderQuestion() {
+    const q = QUESTIONS[qi];
+    $('bar').style.width = (qi / QUESTIONS.length * 100) + '%';
+    $('count').textContent = (qi + 1) + ' / ' + QUESTIONS.length;
+    $('qKicker').textContent = q.kicker;
+    $('qTitle').textContent = q.title;
+    $('backBtn').disabled = qi === 0;
+    const box = $('options');
+    box.innerHTML = '';
+    q.options.forEach((o, i) => {
+      const b = document.createElement('button');
+      b.className = 'opt';
+      b.innerHTML = '<span class="num"></span><span></span>';
+      b.children[0].textContent = i + 1;
+      b.children[1].textContent = o.label;
+      b.addEventListener('click', () => pick(o, b));
+      box.appendChild(b);
+    });
+    const v = $('quizView'); v.style.animation = 'none'; void v.offsetWidth; v.style.animation = '';
+  }
+
+  function pick(o, btn) {
+    if (locked) return;
+    locked = true;
+    btn.classList.add('picked');
+    answers = answers.slice(0, qi);
+    answers.push(o);
+    $('bar').style.width = ((qi + 1) / QUESTIONS.length * 100) + '%';
+    setTimeout(() => {
+      locked = false;
+      if (qi + 1 < QUESTIONS.length) { qi++; renderQuestion(); } else finish();
+    }, 320);
+  }
+
+  function finish() {
+    const u = {};
+    AXES.forEach((k) => {
+      const vals = answers.map((a) => a.vec[k]).filter((v) => v !== undefined);
+      u[k] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : .5;
+    });
+    const g = answers[0] && answers[0].gender;
+    const ranked = DESTS.map((d) => {
+      let dist = 0;
+      AXES.forEach((k) => { dist += W[k] * Math.abs(u[k] - d.a[k]); });
+      return { d, dist: dist - genderBias(g, d) };
+    }).sort((a, b) => a.dist - b.dist).map((s) => s.d);
+    const reasons = [];
+    answers.forEach((a) => { if (a.reason && reasons.length < 3 && !reasons.includes(a.reason)) reasons.push(a.reason); });
+    renderResult(ranked[0], ranked.slice(1, 4), reasons);
+  }
+
+  function renderResult(best, alts, reasons) {
+    const r = regionOf(best);
+    drawShape($('cutout'), $('cutShape'), $('cutShadow'), r);
+    const title = isMetro(r) ? r.p : r.n;
+    $('cutout').setAttribute('aria-label', title + ' 지역 모양');
+    $('rTitle').textContent = title;
+    $('rSub').textContent = isMetro(r) ? '대한민국' : r.p;
+    $('rTag').textContent = best.tag;
+    if (reasons) {
+      const ul = $('reasons'); ul.innerHTML = '';
+      reasons.forEach((t) => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+    }
+    const box = $('alts'); box.innerHTML = '';
+    alts.forEach((d) => {
+      const ar = regionOf(d);
+      const b = document.createElement('button');
+      b.className = 'alt';
+      b.innerHTML = '<svg aria-hidden="true"><path fill="#1F3A5F" stroke="#16202A" stroke-linejoin="round"/></svg><b></b><span></span>';
+      drawShape(b.querySelector('svg'), b.querySelector('path'), null, ar);
+      b.querySelector('b').textContent = isMetro(ar) ? ar.p.replace(/(특별시|광역시|특별자치시)$/, '') : ar.n;
+      b.querySelector('span').textContent = isMetro(ar) ? '대한민국' : ar.p.replace('특별자치도', '');
+      b.setAttribute('aria-label', b.querySelector('b').textContent + ' 결과 보기');
+      b.addEventListener('click', () => renderResult(d, alts.filter((x) => x !== d).concat(best), null));
+      box.appendChild(b);
+    });
+    show('resultView');
+    window.scrollTo(0, 0);
+  }
+
+  function start() {
+    qi = 0; answers = [];
+    if (regions) { show('quizView'); renderQuestion(); return; }
+    $('introView').hidden = true; $('loading').hidden = false;
+    fetch('regions.json').then((res) => res.json()).then((d) => {
+      regions = d.regions;
+      $('loading').hidden = true;
+      show('quizView'); renderQuestion();
+    }).catch(() => { $('loading').textContent = '지도를 불러오지 못했어요. 새로고침해 주세요.'; });
+  }
+
+  $('startBtn').addEventListener('click', start);
+  $('retryBtn').addEventListener('click', start);
+  $('backBtn').addEventListener('click', () => { if (qi > 0 && !locked) { qi--; renderQuestion(); } });
+})();
+</script>
+</body>
+</html>

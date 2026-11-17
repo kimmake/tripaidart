@@ -3,6 +3,7 @@
 대한민국 시·군 지도에 다트를 던져 여행지를 고르는 웹페이지.
 
 - `index.html` — 바로 열 수 있는 웹페이지 (정적 서버 필요: `fetch('regions.json')`)
+- `quiz.html` — 성별·취향 질문 6개로 국내 시·군 여행지를 추천하는 성향 검사 (다트 결과 카드의 "사용자 맞춤 여행지 찾기" 버튼으로 연결)
 - `regions.json` — 시·군 경계(지도 좌표로 변환된 SVG path), 이름표 위치, 도 경계
 - `design/` — Claude Design 캔버스 원본(`Main.dc.html`, `canvas.json`). 캔버스 전용 형식이라 단독으로는 열리지 않음
 - `scripts/build-regions.mjs` — `regions.json` 생성 스크립트
