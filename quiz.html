@@ -39,6 +39,10 @@ button{font:inherit;}
 .tai-option{appearance:none;text-align:left;cursor:pointer;border:0;border-top:1px solid rgba(255,255,255,.1);padding:20px 8px 20px 4px;min-height:60px;display:flex;align-items:baseline;gap:18px;width:100%;transform-origin:left center;transition:all 420ms cubic-bezier(.3,0,.2,1);background:transparent;font-family:inherit;}
 .tai-option-num{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;color:rgba(190,225,255,.55);flex:none}
 .tai-option-label{font-weight:300;font-size:clamp(16.5px,4.4vw,23px);line-height:1.35;letter-spacing:-.01em;flex:1}
+.tai-kw-grid{display:grid!important;grid-template-columns:repeat(3,1fr);gap:10px!important}
+.tai-kw-grid .tai-option{border:1px solid rgba(190,225,255,.18);border-radius:14px;padding:18px 6px;min-height:72px;justify-content:center;align-items:center;text-align:center;transform-origin:center}
+.tai-kw-grid .tai-option-num,.tai-kw-grid .tai-option-arrow{display:none}
+.tai-kw-grid .tai-option-label{flex:none;font-size:clamp(14.5px,3.9vw,18px);word-break:keep-all}
 .tai-option-arrow{font-family:'IBM Plex Mono',monospace;font-size:13px;flex:none;transition:opacity 400ms ease;color:var(--ice,#cfe6ff)}
 
 /* result: alternates */
@@ -165,50 +169,84 @@ button{font:inherit;}
 (function () {
   'use strict';
 
-  // Q1은 성별, Q2~Q10은 간이 성향 문항입니다. 각 선택지는 유형(type 1~9) 하나를 가리키고,
-  // 유형마다 정확히 3번씩 등장합니다. 정식 심리 검사가 아닌 재미용 간이 문항입니다.
+  // Q1은 성별, Q2~Q10은 4지선다 간이 성향 문항, Q11~Q13은 키워드 선택입니다.
+  // 각 선택지는 유형(type 1~9) 하나를 가리킵니다. Q2~Q10에서 유형마다 4번씩, 키워드 라운드에서 1번씩 등장합니다.
+  // 정식 심리 검사가 아닌 재미용 간이 문항입니다.
   const QUESTIONS = [
     { kicker: 'Q1 / ABOUT YOU', title: '성별을 알려주세요.', options: [
       { label: '여성', mood: 'city', vec: {}, gender: 'f' },
       { label: '남성', mood: 'active', vec: {}, gender: 'm' },
       { label: '선택 안 함', mood: 'nature', vec: {}, gender: null } ] },
     { kicker: 'Q2 / PLAN', title: '여행 계획을 세울 때 나는?', options: [
-      { label: '일정표를 꼼꼼히 짜야 마음이 놓여요', mood: 'city', vec: {}, type: 1 },
-      { label: '일행이 가고 싶은 곳부터 챙겨요', mood: 'food', vec: {}, type: 2 },
-      { label: '남들이 부러워할 핫플부터 찾아요', mood: 'city', vec: {}, type: 3 } ] },
+      { label: '동선과 예약을 꼼꼼히 확인해 실수가 없게 해요', mood: 'city', vec: {}, type: 1 },
+      { label: '짧은 시간에 최대한 많이 보도록 효율적으로 짜요', mood: 'city', vec: {}, type: 3 },
+      { label: '그 지역의 역사와 정보를 깊이 공부해 둬요', mood: 'city', vec: {}, type: 5 },
+      { label: '큰 틀은 내가 정하고 일행을 이끌어요', mood: 'active', vec: {}, type: 8 } ] },
     { kicker: 'Q3 / ATTRACTION', title: '여행지에서 가장 끌리는 건?', options: [
-      { label: '나만 아는 분위기 있는 장소', mood: 'nature', vec: {}, type: 4 },
-      { label: '그곳의 역사와 숨은 이야기', mood: 'city', vec: {}, type: 5 },
-      { label: '후기가 많고 검증된 곳', mood: 'food', vec: {}, type: 6 } ] },
+      { label: '현지 사람들과 정을 나누는 따뜻한 순간', mood: 'food', vec: {}, type: 2 },
+      { label: '남들은 모르는 나만의 감성 스폿', mood: 'nature', vec: {}, type: 4 },
+      { label: '후기가 많고 안전이 검증된 곳', mood: 'city', vec: {}, type: 6 },
+      { label: '아무 생각 없이 쉴 수 있는 한적한 풍경', mood: 'nature', vec: {}, type: 9 } ] },
     { kicker: 'Q4 / FRIENDS', title: '친구들이 말하는 나는?', options: [
-      { label: '늘 새로운 재미를 찾는 사람', mood: 'active', vec: {}, type: 7 },
-      { label: '앞장서서 결정하는 사람', mood: 'active', vec: {}, type: 8 },
-      { label: '누구와도 잘 맞추는 편한 사람', mood: 'nature', vec: {}, type: 9 } ] },
+      { label: '뭐든 잘 해내는 능력자', mood: 'city', vec: {}, type: 3 },
+      { label: '아는 게 많고 차분한 관찰자', mood: 'nature', vec: {}, type: 5 },
+      { label: '분위기 메이커, 아이디어 뱅크', mood: 'active', vec: {}, type: 7 },
+      { label: '바르고 책임감 강한 사람', mood: 'city', vec: {}, type: 1 } ] },
     { kicker: 'Q5 / TROUBLE', title: '여행 중 예상 못한 문제가 생기면?', options: [
-      { label: '원칙대로 차근차근 해결해요', mood: 'city', vec: {}, type: 1 },
-      { label: '내가 먼저 나서서 해결해요', mood: 'active', vec: {}, type: 8 },
-      { label: '미리 준비한 플랜 B를 꺼내요', mood: 'city', vec: {}, type: 6 } ] },
+      { label: '당황스럽지만 이것도 나만의 이야기라고 생각해요', mood: 'nature', vec: {}, type: 4 },
+      { label: '미리 준비해 둔 플랜 B를 꺼내요', mood: 'city', vec: {}, type: 6 },
+      { label: '내가 앞장서서 바로 해결해요', mood: 'active', vec: {}, type: 8 },
+      { label: '일행이 불편하지 않게 먼저 챙겨요', mood: 'food', vec: {}, type: 2 } ] },
     { kicker: 'Q6 / HAPPY', title: '여행에서 가장 행복한 순간은?', options: [
-      { label: '함께 간 사람이 즐거워할 때', mood: 'food', vec: {}, type: 2 },
-      { label: '새로운 걸 잔뜩 경험할 때', mood: 'active', vec: {}, type: 7 },
-      { label: '아무 걱정 없이 늘어져 있을 때', mood: 'nature', vec: {}, type: 9 } ] },
+      { label: '새로운 사실을 알게 되었을 때', mood: 'city', vec: {}, type: 5 },
+      { label: '계획에 없던 신나는 일이 생겼을 때', mood: 'active', vec: {}, type: 7 },
+      { label: '모두가 편안하게 웃고 있을 때', mood: 'nature', vec: {}, type: 9 },
+      { label: '가고 싶던 곳을 다 정복했을 때', mood: 'city', vec: {}, type: 3 } ] },
     { kicker: 'Q7 / PHOTO', title: '여행 사진을 찍는다면?', options: [
-      { label: '잘 나온 사진을 골라 바로 SNS에', mood: 'city', vec: {}, type: 3 },
-      { label: '감성 가득한 나만의 구도로', mood: 'nature', vec: {}, type: 4 },
-      { label: '사진보다 눈으로 오래 관찰해요', mood: 'nature', vec: {}, type: 5 } ] },
+      { label: '혹시 몰라 중요한 정보까지 꼼꼼히 찍어 둬요', mood: 'city', vec: {}, type: 6 },
+      { label: '대충 찍어요, 경험하는 게 먼저예요', mood: 'active', vec: {}, type: 8 },
+      { label: '수평과 구도가 딱 맞아야 해요', mood: 'city', vec: {}, type: 1 },
+      { label: '분위기를 담은 나만의 감성 사진을 남겨요', mood: 'nature', vec: {}, type: 4 } ] },
     { kicker: 'Q8 / FREE DAY', title: '일정 없는 하루가 생기면?', options: [
-      { label: '미뤄 둔 책이나 박물관을 찾아요', mood: 'city', vec: {}, type: 5 },
-      { label: '세워 둔 목표 코스를 끝까지 해내요', mood: 'active', vec: {}, type: 3 },
-      { label: '익숙한 단골 가게로 가요', mood: 'food', vec: {}, type: 6 } ] },
+      { label: '즉흥으로 새로운 동네를 탐험해요', mood: 'active', vec: {}, type: 7 },
+      { label: '숙소에서 느긋하게 쉬어요', mood: 'nature', vec: {}, type: 9 },
+      { label: '일행이 하고 싶은 걸 같이 해요', mood: 'food', vec: {}, type: 2 },
+      { label: '혼자 박물관이나 서점에서 시간을 보내요', mood: 'city', vec: {}, type: 5 } ] },
     { kicker: 'Q9 / DISLIKE', title: '가장 싫은 여행은?', options: [
-      { label: '엉망진창 즉흥 여행', mood: 'city', vec: {}, type: 1 },
-      { label: '나만 겉도는 여행', mood: 'food', vec: {}, type: 2 },
-      { label: '누구나 하는 뻔한 여행', mood: 'nature', vec: {}, type: 4 } ] },
-    { kicker: 'Q10 / WHY', title: '여행을 떠나는 이유는?', options: [
-      { label: '지루한 일상에서 벗어나려고', mood: 'active', vec: {}, type: 7 },
-      { label: '내 한계를 시험해 보려고', mood: 'active', vec: {}, type: 8 },
-      { label: '마음의 평화를 찾으려고', mood: 'nature', vec: {}, type: 9 } ] }
+      { label: '남이 다 정해 놓은 대로 끌려다니는 여행', mood: 'active', vec: {}, type: 8 },
+      { label: '엉망진창 무계획 여행', mood: 'city', vec: {}, type: 1 },
+      { label: '남는 것도 보여 줄 것도 없는 여행', mood: 'city', vec: {}, type: 3 },
+      { label: '정보 없이 낯선 곳에 덜컥 떨어지는 여행', mood: 'nature', vec: {}, type: 6 } ] },
+    { kicker: 'Q10 / WHY', title: '여행을 떠나는 진짜 이유는?', options: [
+      { label: '복잡한 일상에서 벗어나 마음의 평화를 찾으려고', mood: 'nature', vec: {}, type: 9 },
+      { label: '소중한 사람과 추억을 만들려고', mood: 'food', vec: {}, type: 2 },
+      { label: '진짜 나를 만나고 영감을 얻으려고', mood: 'nature', vec: {}, type: 4 },
+      { label: '지루한 일상을 벗어나 신나는 일을 찾으려고', mood: 'active', vec: {}, type: 7 } ] }
   ];
+
+  // 키워드 라운드: Digital Type Lab(digitaltype.vercel.app)의 '유형 키워드 선택' 단어를 그대로 사용합니다.
+  // KEYWORDS[유형] = [1라운드, 2라운드, 3라운드] 단어. 라운드마다 9개 단어를 섞어서 보여 줍니다.
+  const KEYWORDS = {
+    1: ['규칙', '기준', '완벽주의'],
+    2: ['관계중심', '기브앤테이크', '헌신적인 사랑'],
+    3: ['목표달성', '증명', '효율'],
+    4: ['독창성', '예술', '자기성찰'],
+    5: ['지식', '분석', '탐구'],
+    6: ['불안', '충성', '안전추구'],
+    7: ['재미', '도파민', '도전'],
+    8: ['리더', '지배', '힘'],
+    9: ['평화주의', '무던함', '안정형']
+  };
+  const MOODS_BY_TYPE = { 1: 'city', 2: 'food', 3: 'city', 4: 'nature', 5: 'city', 6: 'city', 7: 'active', 8: 'active', 9: 'nature' };
+  [0, 1, 2].forEach((round) => {
+    const opts = Object.keys(KEYWORDS).map(Number)
+      .map((t) => ({ label: KEYWORDS[t][round], mood: MOODS_BY_TYPE[t], vec: {}, type: t }))
+      .map((o) => [Math.random(), o]).sort((x, y) => x[0] - y[0]).map((x) => x[1]);
+    QUESTIONS.push({ kicker: 'Q' + (11 + round) + ' / KEYWORD ' + (round + 1) + ' of 3', title: '현재 나와 가장 가까운 단어를 하나 선택해주세요.', options: opts, grid: true });
+  });
+  // 유형별 최대 점수(그래프 높이 기준)
+  const TYPE_MAX = {};
+  QUESTIONS.forEach((q) => q.options.forEach((o) => { if (o.type) TYPE_MAX[o.type] = (TYPE_MAX[o.type] || 0) + 1; }));
 
   // 성향 유형별 여행 성향. vec는 여행지 점수(a)와 같은 축이며 임시값입니다.
   const TYPES = {
@@ -684,6 +722,8 @@ button{font:inherit;}
 
   function renderOptions(q) {
     els.optionsList.innerHTML = '';
+    els.optionsList.classList.toggle('tai-kw-grid', !!q.grid);
+    els.optionsList.style.flexDirection = q.grid ? '' : 'column';
     els.optionButtons = q.options.map((o, i) => {
       const btn = document.createElement('button');
       btn.className = 'tai-option';
@@ -717,7 +757,7 @@ button{font:inherit;}
   }
 
   // 높은 성향 2개, 낮은 성향 2개를 막대로 그립니다. 막대 아래에는 번호만 작게 표시합니다.
-  // 유형마다 문항이 3개라서 점수 = 고른 횟수 / 3 입니다.
+  // 점수 = 고른 횟수 / 그 유형이 나올 수 있는 최대 횟수(TYPE_MAX).
   function renderChart(counts, top) {
     const ids = Object.keys(counts).map(Number);
     const shuffle = (arr) => arr.map((v) => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map((x) => x[1]);
@@ -727,7 +767,7 @@ button{font:inherit;}
     els.typeChart.innerHTML = '';
     els.typeChart.setAttribute('aria-label', '높은 성향 2개와 낮은 성향 2개 그래프');
     bars.forEach((id, i) => {
-      const pct = counts[id] / 3;
+      const pct = counts[id] / TYPE_MAX[id];
       const high = i < 2;
       const col = document.createElement('div');
       col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:10px';
