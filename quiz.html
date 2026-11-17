@@ -1,299 +1,837 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>맞춤 여행지 찾기 · Trip Dart</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>맞춤 여행지 찾기</title>
+<meta name="description" content="몇 가지 질문에 답하면 국내와 해외 가운데 당신의 여행 성향에 맞는 여행지를 찾아드립니다.">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=IBM+Plex+Sans+KR:wght@200;300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root { --sea:#DCE7EC; --land:#FFFFFF; --border:#A9B1B6; --accent:#E4572E; --accent-dark:#A63A17; --navy:#1F3A5F; --ink:#16202A; --muted:#5B6772; --line:#C3CCD2; --cream:#FBF4EF; }
-  * { box-sizing: border-box; }
-  body { margin: 0; min-height: 100vh; background: var(--sea); font-family: 'Noto Sans KR', system-ui, sans-serif; color: var(--ink); display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
-  .card { width: 100%; max-width: 420px; background: #fff; border-radius: 24px; padding: 28px 24px; box-shadow: 0 24px 60px rgba(16,24,32,.18); display: flex; flex-direction: column; gap: 20px; }
-  .view { display: flex; flex-direction: column; gap: 20px; animation: popIn .4s cubic-bezier(.2,1.3,.4,1) both; }
-  [hidden] { display: none !important; }
-  .kicker { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .04em; color: var(--accent); }
-  h1 { margin: 0; font-size: 30px; line-height: 1.25; font-weight: 900; letter-spacing: -.02em; }
-  h2 { margin: 0; font-size: 22px; line-height: 1.4; font-weight: 700; letter-spacing: -.01em; }
-  .lead { margin: 0; font-size: 15px; line-height: 1.7; color: var(--muted); }
-  .progress { display: flex; align-items: center; gap: 12px; }
-  .bar { flex: 1; height: 6px; border-radius: 3px; background: #EEF2F3; overflow: hidden; }
-  .bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .35s ease; }
-  .count { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .options { display: flex; flex-direction: column; gap: 10px; }
-  .opt { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: #fff; color: var(--ink); font: 500 16px 'Noto Sans KR', system-ui, sans-serif; text-align: left; cursor: pointer; transition: background .15s, border-color .15s; }
-  .opt:hover { background: #F6F8F9; border-color: var(--navy); }
-  .opt.picked { background: var(--navy); border-color: var(--navy); color: #fff; }
-  .opt .num { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--sea); color: var(--navy); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-  .opt.picked .num { background: #fff; }
-  .row { display: flex; gap: 10px; }
-  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; height: 56px; border: 0; border-radius: 14px; background: var(--navy); color: #fff; font: 700 18px 'Noto Sans KR', system-ui, sans-serif; text-decoration: none; cursor: pointer; }
-  .btn:hover { background: #0F2440; }
-  .btn.accent { background: var(--accent); }
-  .btn.accent:hover { background: var(--accent-dark); }
-  .ghost { display: flex; align-items: center; justify-content: center; height: 48px; border: 1px solid var(--line); border-radius: 14px; background: #fff; color: #2B3640; font: 500 16px 'Noto Sans KR', system-ui, sans-serif; text-decoration: none; cursor: pointer; }
-  .ghost:hover { background: #EEF2F3; }
-  .back { align-self: flex-start; height: 40px; padding: 0 4px; border: 0; background: none; color: var(--muted); font: 500 14px 'Noto Sans KR', system-ui, sans-serif; cursor: pointer; }
-  .back:disabled { visibility: hidden; }
-  .cutout { height: 220px; border-radius: 16px; background: var(--cream); display: flex; align-items: center; justify-content: center; padding: 20px; }
-  .cutout svg { width: 100%; height: 100%; overflow: visible; }
-  .names { display: flex; flex-direction: column; gap: 4px; text-align: center; }
-  .names p { margin: 0; font-size: 14px; color: var(--muted); }
-  .names h2 { font-size: 34px; line-height: 1.2; font-weight: 900; letter-spacing: -.02em; }
-  .names .tag { margin-top: 6px; font-size: 15px; color: var(--ink); }
-  .section-title { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--muted); }
-  .reasons { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
-  .reasons li { display: flex; gap: 10px; font-size: 15px; line-height: 1.6; }
-  .reasons li::before { content: ''; flex: none; width: 6px; height: 6px; margin-top: 10px; border-radius: 50%; background: var(--accent); }
-  .alts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .alt { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px; border: 1px solid #E3E8EB; border-radius: 12px; background: #fff; cursor: pointer; font: inherit; color: inherit; }
-  .alt:hover { border-color: var(--navy); }
-  .alt svg { width: 56px; height: 56px; overflow: visible; }
-  .alt b { font-size: 14px; font-weight: 700; }
-  .alt span { font-size: 11px; color: var(--muted); }
-  .loading { text-align: center; font-size: 15px; color: #3B4F63; }
-  .opt:focus-visible, .btn:focus-visible, .ghost:focus-visible, .alt:focus-visible, .back:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-  @keyframes popIn { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
-  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; } }
+html,body{margin:0;padding:0;background:#000;}
+body{-webkit-font-smoothing:antialiased;}
+* { box-sizing: border-box; }
+a{color:#dceaff;}a:hover{color:#fff;}
+button{font:inherit;}
+::selection{background:rgba(190,225,255,.25);}
+
+@keyframes tai-in{from{opacity:0;filter:blur(14px);transform:translateY(14px)}to{opacity:1;filter:blur(0);transform:translateY(0)}}
+@keyframes tai-in-soft{from{opacity:0;filter:blur(8px)}to{opacity:1;filter:blur(0)}}
+@keyframes tai-runway{0%{opacity:.15}50%{opacity:.55}100%{opacity:.15}}
+
+@media (prefers-reduced-motion: reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+
+.tai-hint-btn:hover{color:#fff}
+.tai-map-btn:hover{border-color:rgba(215,238,255,.8);background:rgba(190,225,255,.1);box-shadow:0 0 34px rgba(150,200,255,.28)}
+.tai-back-btn:hover{color:rgba(255,255,255,.7)}
+
+/* image slot: production-only version of the design's user-fillable placeholder —
+   a static striped placeholder that crossfades into the fetched photo */
+.tai-image-slot{position:relative;overflow:hidden;background:#0a0a0a}
+.tai-slot-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;background:repeating-linear-gradient(45deg,rgba(255,255,255,.035) 0 2px,transparent 2px 14px);color:rgba(255,255,255,.35);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;transition:opacity 500ms ease;}
+.tai-slot-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 900ms ease;}
+.tai-slot-img.is-loaded{opacity:1}
+.tai-image-slot.has-image .tai-slot-placeholder{opacity:0}
+.tai-slot-credit{position:absolute;left:10px;bottom:10px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.08em;color:rgba(255,255,255,.55);text-decoration:none;opacity:0;transition:opacity 300ms ease;z-index:2}
+.tai-slot-credit.is-visible{opacity:1}
+
+/* quiz option rows (state driven from JS, transitions defined here) */
+.tai-option{appearance:none;text-align:left;cursor:pointer;border:0;border-top:1px solid rgba(255,255,255,.1);padding:20px 8px 20px 4px;min-height:60px;display:flex;align-items:baseline;gap:18px;width:100%;transform-origin:left center;transition:all 420ms cubic-bezier(.3,0,.2,1);background:transparent;font-family:inherit;}
+.tai-option-num{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;color:rgba(190,225,255,.55);flex:none}
+.tai-option-label{font-weight:300;font-size:clamp(16.5px,4.4vw,23px);line-height:1.35;letter-spacing:-.01em;flex:1}
+.tai-option-arrow{font-family:'IBM Plex Mono',monospace;font-size:13px;flex:none;transition:opacity 400ms ease;color:var(--ice,#cfe6ff)}
+
+/* result: alternates */
+.tai-alt-card{display:flex;flex-direction:column;gap:14px}
+.tai-alt-imgwrap{width:100%;aspect-ratio:4/5;background:#060606}
+.tai-alt-city{font-family:'Space Grotesk',sans-serif;font-weight:400;font-size:clamp(20px,5vw,27px);letter-spacing:-.02em;color:#fff}
+.tai-alt-meta{margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;color:rgba(255,255,255,.4)}
+.tai-alt-tagline{margin-top:10px;font-weight:200;font-size:13.5px;line-height:1.55;color:rgba(255,255,255,.55)}
+
+.tai-reason{display:flex;align-items:baseline;gap:18px;padding:22px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.tai-reason-num{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ice,#cfe6ff);opacity:.6;flex:none}
+.tai-reason-text{font-weight:200;font-size:clamp(16px,4.3vw,22px);line-height:1.45;color:rgba(255,255,255,.88);text-wrap:pretty}
 </style>
 </head>
 <body>
-<main class="card">
-  <section class="view" id="introView">
-    <p class="kicker">TRIP DART · 맞춤 여행지 찾기</p>
-    <h1>나에게 맞는<br>국내 여행지는 어디일까?</h1>
-    <p class="lead">질문 6개에 답하면 다트 지도 속 시·군 가운데 당신의 여행 성향에 맞는 곳을 골라 드려요.</p>
-    <button class="btn accent" id="startBtn">검사 시작하기</button>
-    <a class="ghost" href="./">다트 던지러 가기</a>
-  </section>
+<div id="root" style="--ice:#cfe6ff;position:fixed;inset:0;background:#000;color:#fff;font-family:'IBM Plex Sans KR','Space Grotesk',system-ui,sans-serif;overflow:hidden;overscroll-behavior:none">
 
-  <section class="view" id="quizView" hidden>
-    <div class="progress"><div class="bar"><i id="bar"></i></div><span class="count" id="count"></span></div>
-    <p class="kicker" id="qKicker"></p>
-    <h2 id="qTitle"></h2>
-    <div class="options" id="options"></div>
-    <button class="back" id="backBtn">← 이전 질문</button>
-  </section>
+  <div style="position:absolute;inset:0;pointer-events:none;z-index:6;background:radial-gradient(120% 90% at 50% 45%,transparent 45%,rgba(0,0,0,.85) 100%)"></div>
+  <div id="moodLayer" style="position:absolute;inset:0;pointer-events:none;z-index:5;opacity:0;transition:opacity 900ms ease"></div>
 
-  <section class="view" id="resultView" hidden>
-    <div class="cutout"><svg id="cutout" role="img"><path id="cutShadow" fill="#000" opacity=".12"/><path id="cutShape" fill="#E4572E" stroke="#A63A17" stroke-linejoin="round"/></svg></div>
-    <div class="names"><p id="rSub"></p><h2 id="rTitle"></h2><p class="tag" id="rTag"></p></div>
-    <div><p class="section-title">이런 성향이라서 골랐어요</p><ul class="reasons" id="reasons"></ul></div>
-    <div><p class="section-title">이런 곳도 잘 맞아요</p><div class="alts" id="alts"></div></div>
-    <button class="btn accent" id="retryBtn">다시 검사하기</button>
-    <a class="ghost" href="./">다트 던지러 가기</a>
-  </section>
+  <div id="logo" style="position:absolute;left:50%;z-index:8;pointer-events:none;top:46%;transform:translate(-50%,-50%) scale(1);opacity:0;transition:top 1400ms cubic-bezier(.2,.7,.15,1),transform 1400ms cubic-bezier(.2,.7,.15,1),opacity 1200ms ease">
+    <div style="font-family:'Space Grotesk',sans-serif;font-weight:400;font-size:clamp(46px,11vw,104px);letter-spacing:.02em;line-height:1;color:#fff;text-shadow:0 0 14px rgba(205,232,255,.55),0 0 46px rgba(150,200,255,.35),0 0 110px rgba(110,170,255,.22);white-space:nowrap">Trip<span style="font-weight:300;color:var(--ice,#cfe6ff)">AI</span></div>
+  </div>
 
-  <p class="loading" id="loading" hidden>지도를 불러오는 중…</p>
-</main>
+  <div id="phaseIntro" class="tai-phase" style="position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0">
+    <div style="height:clamp(120px,22vh,200px)"></div>
+    <div id="tagline" style="opacity:0;transition:opacity 1600ms ease,filter 1600ms ease;filter:blur(10px);text-align:center">
+      <div style="font-family:'Space Grotesk',sans-serif;font-weight:300;font-size:clamp(13px,3.4vw,19px);letter-spacing:.42em;text-transform:uppercase;color:rgba(225,240,255,.82)">Where will you go next?</div>
+      <div style="margin-top:18px;font-weight:200;font-size:clamp(12px,3.1vw,15px);letter-spacing:.18em;color:rgba(255,255,255,.4)">여행, 당신에게 더 가까워지다.</div>
+    </div>
+    <div id="hintWrap" style="position:absolute;bottom:38px;left:0;right:0;display:flex;justify-content:center;opacity:0;transition:opacity 1200ms ease">
+      <button id="beginBtn" class="tai-hint-btn" style="appearance:none;background:transparent;border:0;padding:12px 16px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.32em;text-transform:uppercase;color:rgba(255,255,255,.42)">Scroll / tap to begin</button>
+    </div>
+  </div>
 
+  <div id="phaseMap" class="tai-phase" style="position:absolute;inset:0;z-index:4;display:none;flex-direction:column">
+    <div id="heroMap" style="position:absolute;left:0;right:0;top:0;bottom:0;transform:scale(1) translateY(0%);opacity:1;transition:transform 1300ms cubic-bezier(.4,0,.2,1),opacity 1100ms ease;will-change:transform,opacity"></div>
+    <div id="mapUi" style="position:absolute;left:0;right:0;bottom:0;z-index:5;display:flex;flex-direction:column;align-items:center;padding:0 22px 42px;background:linear-gradient(to top,rgba(0,0,0,.92) 10%,rgba(0,0,0,0) 100%);opacity:1;transition:opacity 800ms ease">
+      <div id="mapQ" style="font-weight:200;font-size:clamp(19px,5.6vw,32px);letter-spacing:-.01em;color:rgba(255,255,255,.94);text-align:center">어디로 떠나고 싶나요?</div>
+      <button id="startQuizBtn" class="tai-map-btn" style="margin-top:30px;position:relative;overflow:hidden;appearance:none;cursor:pointer;background:rgba(190,225,255,.04);border:1px solid rgba(190,225,255,.32);border-radius:999px;padding:16px 30px;min-height:52px;white-space:nowrap;color:#fff;font-family:'IBM Plex Sans KR',sans-serif;font-weight:300;font-size:15px;letter-spacing:.04em;transition:box-shadow 500ms ease,border-color 500ms ease,background 500ms ease">나에게 맞는 여행지 찾기 →</button>
+    </div>
+  </div>
+
+  <div id="phaseQuiz" class="tai-phase" style="position:absolute;inset:0;z-index:7;display:none;flex-direction:column;align-items:center;padding:clamp(74px,13vh,140px) 22px 28px;box-sizing:border-box;overflow-y:auto;-webkit-overflow-scrolling:touch">
+    <div style="width:100%;max-width:560px;display:flex;align-items:center;gap:14px">
+      <div style="flex:1;height:1px;background:rgba(255,255,255,.12);position:relative">
+        <div id="progressFill" style="position:absolute;left:0;top:0;height:1px;width:0%;background:linear-gradient(90deg,rgba(190,225,255,.35),#eaf6ff);box-shadow:0 0 10px rgba(170,215,255,.7);transition:width 700ms cubic-bezier(.4,0,.2,1)"></div>
+      </div>
+      <div id="progressLabel" style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.18em;color:rgba(255,255,255,.45)"></div>
+    </div>
+
+    <div style="width:100%;max-width:720px;margin-top:clamp(28px,7vh,74px);flex:0 0 auto;display:flex;flex-direction:column;justify-content:center">
+      <div id="qBlock" style="animation:tai-in 900ms both">
+        <div id="qKicker" style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.3em;color:var(--ice,#cfe6ff);opacity:.7"></div>
+        <div id="qTitle" style="margin-top:16px;font-weight:200;font-size:clamp(23px,6.4vw,40px);line-height:1.28;letter-spacing:-.015em;color:#fff;text-wrap:pretty"></div>
+        <div id="optionsList" style="margin-top:clamp(26px,5vh,44px);display:flex;flex-direction:column;gap:2px"></div>
+      </div>
+    </div>
+    <button id="backBtn" class="tai-back-btn" style="appearance:none;background:transparent;border:0;cursor:pointer;margin-top:28px;padding:12px;flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.28);opacity:0">← back</button>
+  </div>
+
+  <div id="phaseAnalyze" class="tai-phase" style="position:absolute;inset:0;z-index:7;display:none;flex-direction:column;align-items:center;justify-content:center">
+    <div id="analyzeMap" style="position:absolute;left:0;right:0;top:50%;transform:translateY(-58%);height:min(62vh,520px);opacity:.9"></div>
+    <div style="position:absolute;left:0;right:0;bottom:clamp(60px,14vh,120px);display:flex;flex-direction:column;align-items:center;gap:0;padding:0 24px">
+      <div id="analyzeMsg" style="animation:tai-in-soft 900ms both;font-weight:200;font-size:clamp(17px,4.8vw,26px);letter-spacing:-.01em;color:#fff;text-align:center;text-shadow:0 0 30px rgba(0,0,0,.9)"></div>
+      <div style="margin-top:26px;width:min(220px,46vw);height:1px;background:rgba(255,255,255,.12);position:relative">
+        <div id="analyzeFill" style="position:absolute;inset:0 auto 0 0;width:0%;background:#eaf6ff;box-shadow:0 0 10px rgba(170,215,255,.8);transition:width 1400ms linear"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="phaseResult" class="tai-phase" style="position:absolute;inset:0;z-index:7;display:none;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch">
+
+    <section style="position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(90px,16vh,150px) clamp(20px,5vw,64px) clamp(44px,8vh,76px);box-sizing:border-box">
+      <div id="heroImgOuter" style="position:absolute;inset:0;z-index:0;animation:tai-in-soft 2600ms 700ms both">
+        <div id="heroSlot" class="tai-image-slot" style="position:absolute;inset:0">
+          <div id="heroSlotPlaceholder" class="tai-slot-placeholder"><span id="heroSlotHint"></span></div>
+          <img id="heroImg" class="tai-slot-img" alt="">
+          <a id="heroCredit" class="tai-slot-credit" target="_blank" rel="noopener"></a>
+        </div>
+      </div>
+      <div style="position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(to top,rgba(0,0,0,.9) 6%,rgba(0,0,0,.74) 45%,rgba(0,0,0,.5) 100%)"></div>
+      <div style="position:relative;z-index:2">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.3em;color:var(--ice,#cfe6ff);animation:tai-in-soft 1200ms both">YOUR DESTINATION</div>
+        <h1 id="cityUpper" style="margin:10px 0 0;font-family:'Space Grotesk',sans-serif;font-weight:400;font-size:clamp(42px,12vw,120px);line-height:.94;letter-spacing:-.03em;color:#fff;text-shadow:0 0 60px rgba(120,180,255,.22);animation:tai-in 1500ms 150ms both"></h1>
+        <div style="margin-top:22px;max-width:620px;font-weight:200;font-size:clamp(15px,4.2vw,21px);line-height:1.6;color:rgba(255,255,255,.9);animation:tai-in 1400ms 900ms both">당신에게 가장 어울리는 여행지는<br><span id="cityCountry" style="color:#fff;font-weight:300"></span> 입니다.</div>
+        <div style="margin-top:30px;display:flex;flex-wrap:wrap;gap:10px 26px;align-items:center;animation:tai-in 1400ms 1200ms both">
+          <div style="display:flex;align-items:baseline;gap:8px"><span id="matchPct" style="font-family:'Space Grotesk',sans-serif;font-weight:400;font-size:clamp(26px,7vw,40px);letter-spacing:-.02em;color:var(--ice,#cfe6ff);text-shadow:0 0 24px rgba(150,200,255,.45)"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.26em;color:rgba(255,255,255,.5)">취향 매칭</span></div>
+          <div id="destTagline" style="font-weight:200;font-size:13px;color:rgba(255,255,255,.38)"></div>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding:clamp(50px,10vh,96px) clamp(20px,5vw,64px);border-top:1px solid rgba(255,255,255,.08)">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.3em;color:rgba(255,255,255,.4)">WHY HERE</div>
+      <div id="reasonsList" style="margin-top:26px;display:flex;flex-direction:column;gap:0;max-width:760px"></div>
+    </section>
+
+    <section style="padding:clamp(40px,8vh,80px) clamp(20px,5vw,64px) clamp(56px,10vh,100px)">
+      <div style="font-weight:200;font-size:clamp(18px,5vw,27px);color:rgba(255,255,255,.9)">그리고 이런 곳도 잘 맞아요.</div>
+      <div id="altsGrid" style="margin-top:34px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:clamp(14px,2.5vw,26px)"></div>
+    </section>
+
+    <section style="position:relative;min-height:88svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:clamp(60px,12vh,110px) 22px;border-top:1px solid rgba(255,255,255,.08);overflow:hidden">
+      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(760px,120vw);height:1px;background:linear-gradient(90deg,transparent,rgba(190,225,255,.5),transparent);animation:tai-runway 5s ease-in-out infinite"></div>
+      <div style="position:relative;font-family:'Space Grotesk',sans-serif;font-weight:400;font-size:clamp(34px,9vw,62px);letter-spacing:.01em;color:#fff;text-shadow:0 0 18px rgba(205,232,255,.5),0 0 60px rgba(130,185,255,.28)">Trip<span style="font-weight:300;color:var(--ice,#cfe6ff)">AI</span></div>
+      <div style="margin-top:34px;font-weight:200;font-size:clamp(17px,4.8vw,26px);line-height:1.6;color:rgba(255,255,255,.92)">여행지는 찾았습니다.<br>이제 여행을 알아볼 차례입니다.</div>
+      <div id="ctaSub" style="margin-top:18px;font-weight:200;font-size:13.5px;line-height:1.7;color:rgba(255,255,255,.42)"></div>
+      <a class="tai-map-btn" href="./" style="margin-top:40px;position:relative;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;background:rgba(190,225,255,.04);border:1px solid rgba(190,225,255,.32);border-radius:999px;padding:16px 30px;min-height:52px;white-space:nowrap;color:#fff;font-family:'IBM Plex Sans KR',sans-serif;font-weight:300;font-size:15px;letter-spacing:.04em;transition:box-shadow 500ms ease,border-color 500ms ease,background 500ms ease">다트 던지러 가기 →</a>
+      <button id="restartBtn" class="tai-back-btn" style="margin-top:24px;appearance:none;background:transparent;border:0;cursor:pointer;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,255,255,.3)">다시 해보기</button>
+    </section>
+  </div>
+</div>
+
+<script src="https://unpkg.com/d3@7.9.0/dist/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js" integrity="sha384-Ukv1p/xTma6P4/2bY5KzWBw+ydSpXmhCMtyciIQVDJ1RmOxtCYNMF1uXT9T63H67" crossorigin="anonymous"></script>
 <script>
-(() => {
-  // ---------- 질문 ----------
-  // vec: 답변이 가리키는 성향(0~1). 축이 없는 답변은 해당 축에 영향을 주지 않습니다.
+(function () {
+  'use strict';
+
   const QUESTIONS = [
-    { kicker: 'Q1 · 나에 대해', title: '성별을 알려주세요.', options: [
-      { label: '여성', vec: {}, gender: 'f' },
-      { label: '남성', vec: {}, gender: 'm' },
-      { label: '선택 안 함', vec: {}, gender: null } ] },
-    { kicker: 'Q2 · 풍경', title: '여행지에서 가장 보고 싶은 풍경은?', options: [
-      { label: '푸른 산과 숲', vec: { nature: 1, sea: .1, city: .1 }, reason: '산과 숲이 있는 풍경에서 마음이 편해지는 편이에요.' },
-      { label: '탁 트인 바다', vec: { sea: 1, nature: .6, city: .2 }, reason: '바다가 보여야 여행 온 기분이 나는 편이에요.' },
-      { label: '반짝이는 도시의 거리', vec: { city: 1, nature: .1, sea: .2 }, reason: '활기찬 도시의 거리를 걷는 걸 좋아해요.' },
-      { label: '오래된 골목과 유적', vec: { history: 1, city: .4 }, reason: '역사가 남아 있는 곳을 천천히 둘러보는 걸 좋아해요.' } ] },
-    { kicker: 'Q3 · 하루', title: '여행지에서의 하루를 어떻게 보내고 싶나요?', options: [
-      { label: '아무것도 안 하고 푹 쉬기', vec: { active: .1, city: .2 }, reason: '여행은 쉬러 가는 거라고 생각해요.' },
-      { label: '새로운 체험과 액티비티', vec: { active: 1, nature: .7 }, reason: '가만히 있기보다 활동적으로 즐기는 걸 좋아해요.' },
-      { label: '맛집과 카페 투어', vec: { food: 1, city: .7, active: .3 }, reason: '맛집과 카페를 찾아다니는 게 여행의 재미예요.' },
-      { label: '명소를 하나씩 둘러보기', vec: { history: .7, active: .4 }, reason: '그 지역의 대표 명소는 꼭 챙겨 보는 편이에요.' } ] },
-    { kicker: 'Q4 · 음식', title: '여행에서 음식은 얼마나 중요한가요?', options: [
-      { label: '음식 때문에 여행지를 고르기도 해요', vec: { food: 1 }, reason: '먹으러 떠나는 여행을 좋아해요.' },
-      { label: '한 끼 정도는 제대로 먹고 싶어요', vec: { food: .55 }, reason: '하루 한 끼는 제대로 챙기는 편이에요.' },
-      { label: '배만 채우면 괜찮아요', vec: { food: .15 }, reason: '음식보다 풍경과 경험이 더 중요해요.' } ] },
-    { kicker: 'Q5 · 일정', title: '이번 여행은 얼마나 다녀올 수 있나요?', options: [
-      { label: '당일치기', vec: { far: .1 }, reason: '가볍게 다녀올 수 있는 거리를 좋아해요.' },
-      { label: '1박 2일', vec: { far: .5 }, reason: '1박 2일이면 충분히 즐길 수 있다고 생각해요.' },
-      { label: '2박 이상, 멀리', vec: { far: .9 }, reason: '조금 멀어도 확실히 다른 곳으로 떠나고 싶어해요.' } ] },
-    { kicker: 'Q6 · 동행', title: '이번엔 누구와 함께 떠나요?', options: [
-      { label: '혼자서', vec: { active: .4, history: .6 }, reason: '혼자만의 속도로 걷는 여행이 편해요.' },
-      { label: '친구와', vec: { active: .8, food: .7 }, reason: '함께 웃을 일이 많은 여행지를 좋아해요.' },
-      { label: '연인과', vec: { sea: .7, food: .7 }, reason: '둘이서 오래 기억할 장면을 중요하게 생각해요.' },
-      { label: '가족과', vec: { active: .35, nature: .6 }, reason: '모두가 편안한 속도의 여행을 원해요.' } ] }
+    { kicker: 'Q1 / ABOUT YOU', title: '성별을 알려주세요.', options: [
+      { label: '여성', mood: 'city', vec: {}, gender: 'f' },
+      { label: '남성', mood: 'active', vec: {}, gender: 'm' },
+      { label: '선택 안 함', mood: 'nature', vec: {}, gender: null } ] },
+    { kicker: 'Q2 / WHERE', title: '이번엔 어디로 떠나고 싶나요?', options: [
+      { label: '국내', mood: 'nature', vec: {}, scope: 'kr', reason: '가까운 국내에서 새로운 곳을 찾고 있어요.' },
+      { label: '해외', mood: 'city', vec: {}, scope: 'world', reason: '익숙한 곳을 벗어나 해외로 떠나고 싶어해요.' },
+      { label: '어디든 좋아요', mood: 'active', vec: {}, scope: null } ] },
+    { kicker: 'Q3 / MOMENT', title: '여행에서 가장 기대되는 순간은 언제인가요?', options: [
+      { label: '조용한 자연 속에서 쉬는 순간', mood: 'nature', vec: { nature: 1, pace: .2 }, reason: '여행에서 가장 먼저 조용한 자연을 찾는 편이에요.' },
+      { label: '낯선 도시를 걷는 순간', mood: 'city', vec: { nature: .05, pace: .85 }, reason: '낯선 도시의 골목을 걷는 걸 좋아해요.' },
+      { label: '맛있는 음식을 발견하는 순간', mood: 'food', vec: { food: 1, nature: .25 }, reason: '여행의 기준이 음식인 편이에요.' },
+      { label: '새로운 활동에 도전하는 순간', mood: 'active', vec: { active: 1, nature: .7 }, reason: '가만히 있기보다 활동적으로 즐기는 걸 좋아해요.' } ] },
+    { kicker: 'Q4 / PACE', title: '여행지에서의 하루를 어떻게 보내고 싶나요?', options: [
+      { label: '계획 없이, 눈 뜨는 대로', mood: 'nature', vec: { pace: .1, active: .2 }, reason: '일정 없는 하루를 가장 큰 사치로 생각해요.' },
+      { label: '하루에 딱 한 곳만 천천히', mood: 'city', vec: { pace: .45 }, reason: '하루에 한 장면이면 충분한 사람이에요.' },
+      { label: '아침부터 밤까지 부지런히', mood: 'city', vec: { pace: .95, active: .7 }, reason: '짧은 일정에서도 다양한 경험을 원하는 편이에요.' } ] },
+    { kicker: 'Q5 / TASTE', title: '여행에서 음식은 얼마나 중요하나요?', options: [
+      { label: '음식 때문에 도시를 고르기도 해요', mood: 'food', vec: { food: 1 }, reason: '먹으러 떠나는 여행을 좋아해요.' },
+      { label: '하루 한 끼는 제대로 먹고 싶어요', mood: 'food', vec: { food: .65 }, reason: '하루 한 끼는 제대로 챙기는 편이에요.' },
+      { label: '배만 채우면 괜찮아요', mood: 'active', vec: { food: .15 }, reason: '음식보다 풍경과 경험에 예산을 쓰는 편이에요.' } ] },
+    { kicker: 'Q6 / BUDGET', title: '이번 여행에 쓸 수 있는 예산은 어느 정도인가요?', options: [
+      { label: '아껴서 더 오래 머물고 싶어요', mood: 'nature', vec: { budget: .15, days: .7 }, reason: '같은 돈이면 더 오래 머무는 쪽을 골라요.' },
+      { label: '적당히 쓰고 적당히 즐기고 싶어요', mood: 'city', vec: { budget: .5 }, reason: '무리하지 않는 선에서 즐기고 싶어해요.' },
+      { label: '이번만큼은 아끼지 않을래요', mood: 'city', vec: { budget: .9 }, reason: '한 번의 경험에는 아끼지 않는 편이에요.' } ] },
+    { kicker: 'Q7 / DURATION', title: '며칠 정도 다녀올 수 있나요?', options: [
+      { label: '주말 포함 2–3일', mood: 'city', vec: { days: .12, pace: .7 }, reason: '짧게 떠나 진하게 보고 오는 걸 선호해요.' },
+      { label: '일주일 정도', mood: 'city', vec: { days: .5 }, reason: '일주일 정도의 여행 리듬이 잘 맞아요.' },
+      { label: '열흘 이상, 길게', mood: 'nature', vec: { days: .9 }, reason: '길게 머물며 그 도시의 일상에 들어가고 싶어해요.' } ] },
+    { kicker: 'Q8 / COMPANION', title: '이번엔 누구와 함께 떠나요?', options: [
+      { label: '혼자서', mood: 'nature', vec: { pace: .45 }, reason: '혼자만의 속도로 걷는 여행이 편해요.' },
+      { label: '친구와', mood: 'active', vec: { active: .7, pace: .7 }, reason: '함께 웃을 일이 많은 여행지를 좋아해요.' },
+      { label: '연인과', mood: 'food', vec: { food: .7, pace: .5 }, reason: '둘이서 오래 기억할 장면을 중요하게 생각해요.' },
+      { label: '가족과', mood: 'nature', vec: { active: .35, pace: .4 }, reason: '모두가 편안한 속도의 여행을 원해요.' } ] }
   ];
 
-  // ---------- 여행지 ----------
-  // p/n: regions.json의 도(p)·시군(n) 이름. a: 성향 점수(0~1, 임시값). far: 서울에서 체감 거리.
   const DESTS = [
-    { p: '서울특별시', n: '서울', tag: '궁궐, 한강, 골목 맛집이 한 도시에', a: { nature: .15, sea: 0, food: .9, active: .5, city: 1, history: .7, far: 0 } },
-    { p: '부산광역시', n: '부산', tag: '해운대와 광안리, 돼지국밥의 바다 도시', a: { nature: .3, sea: .95, food: .9, active: .55, city: .85, history: .35, far: .75 } },
-    { p: '부산광역시', n: '기장군', tag: '바다 위 해동용궁사와 롯데월드 어드벤처 부산', a: { nature: .5, sea: .9, food: .6, active: .6, city: .35, history: .4, far: .75 } },
-    { p: '인천광역시', n: '인천', tag: '차이나타운과 월미도, 가까운 바다', a: { nature: .2, sea: .6, food: .75, active: .4, city: .75, history: .5, far: .05 } },
-    { p: '인천광역시', n: '강화군', tag: '고인돌과 성곽이 남은 역사의 섬', a: { nature: .6, sea: .5, food: .5, active: .35, city: .1, history: .9, far: .15 } },
-    { p: '경기도', n: '수원시', tag: '수원화성 성곽길과 통닭거리', a: { nature: .2, sea: 0, food: .75, active: .45, city: .7, history: .85, far: .05 } },
-    { p: '경기도', n: '용인시', tag: '에버랜드와 한국민속촌이 있는 곳', a: { nature: .4, sea: 0, food: .45, active: .75, city: .5, history: .45, far: .05 } },
-    { p: '경기도', n: '가평군', tag: '남이섬과 북한강 수상레저', a: { nature: .85, sea: .1, food: .5, active: .75, city: .1, history: .1, far: .15 } },
-    { p: '경기도', n: '양평군', tag: '두물머리 물안개와 강변 카페', a: { nature: .8, sea: 0, food: .55, active: .3, city: .15, history: .2, far: .1 } },
-    { p: '강원특별자치도', n: '춘천시', tag: '닭갈비와 소양강, 레고랜드 코리아', a: { nature: .65, sea: 0, food: .8, active: .55, city: .4, history: .2, far: .25 } },
-    { p: '강원특별자치도', n: '강릉시', tag: '경포 바다와 안목 커피거리, 초당순두부', a: { nature: .55, sea: .9, food: .8, active: .4, city: .45, history: .45, far: .45 } },
-    { p: '강원특별자치도', n: '속초시', tag: '설악산과 속초관광수산시장', a: { nature: .9, sea: .8, food: .75, active: .65, city: .3, history: .2, far: .45 } },
-    { p: '강원특별자치도', n: '양양군', tag: '서핑 보드를 들고 걷는 바다 마을', a: { nature: .7, sea: 1, food: .45, active: .95, city: .2, history: .15, far: .45 } },
-    { p: '강원특별자치도', n: '평창군', tag: '2018 동계올림픽의 스키 리조트와 대관령 목장', a: { nature: .95, sea: 0, food: .4, active: .9, city: .1, history: .15, far: .4 } },
-    { p: '강원특별자치도', n: '정선군', tag: '레일바이크와 정선 5일장', a: { nature: .9, sea: 0, food: .5, active: .7, city: .05, history: .35, far: .45 } },
-    { p: '강원특별자치도', n: '인제군', tag: '내린천 래프팅과 자작나무 숲', a: { nature: .95, sea: 0, food: .3, active: .95, city: 0, history: .1, far: .4 } },
-    { p: '충청북도', n: '단양군', tag: '패러글라이딩과 도담삼봉, 만천하스카이워크', a: { nature: .85, sea: 0, food: .45, active: .9, city: .1, history: .4, far: .35 } },
-    { p: '충청남도', n: '공주시', tag: '공산성과 무령왕릉, 백제의 옛 수도', a: { nature: .4, sea: 0, food: .45, active: .3, city: .2, history: 1, far: .3 } },
-    { p: '충청남도', n: '태안군', tag: '안면도 해변과 서해의 노을', a: { nature: .75, sea: .9, food: .6, active: .45, city: .05, history: .1, far: .3 } },
-    { p: '충청남도', n: '보령시', tag: '대천해수욕장과 머드축제', a: { nature: .55, sea: .9, food: .55, active: .7, city: .2, history: .1, far: .35 } },
-    { p: '전북특별자치도', n: '전주시', tag: '한옥마을 골목과 비빔밥', a: { nature: .2, sea: 0, food: 1, active: .3, city: .6, history: .9, far: .5 } },
-    { p: '전북특별자치도', n: '군산시', tag: '근대 거리와 오래된 빵집', a: { nature: .2, sea: .4, food: .8, active: .25, city: .45, history: .85, far: .5 } },
-    { p: '전라남도', n: '담양군', tag: '죽녹원 대숲과 메타세쿼이아길', a: { nature: .9, sea: 0, food: .6, active: .3, city: .05, history: .4, far: .65 } },
-    { p: '전라남도', n: '여수시', tag: '여수 밤바다와 해상케이블카', a: { nature: .5, sea: .95, food: .85, active: .5, city: .5, history: .3, far: .8 } },
-    { p: '전라남도', n: '순천시', tag: '순천만습지 갈대밭과 국가정원', a: { nature: .95, sea: .4, food: .6, active: .35, city: .25, history: .3, far: .75 } },
-    { p: '전라남도', n: '보성군', tag: '초록 계단처럼 펼쳐진 녹차밭', a: { nature: .9, sea: .3, food: .5, active: .25, city: 0, history: .2, far: .8 } },
-    { p: '경상북도', n: '경주시', tag: '불국사와 대릉원, 황리단길', a: { nature: .35, sea: .2, food: .65, active: .45, city: .35, history: 1, far: .65 } },
-    { p: '경상북도', n: '안동시', tag: '하회마을과 안동찜닭', a: { nature: .45, sea: 0, food: .7, active: .25, city: .15, history: .95, far: .55 } },
-    { p: '경상북도', n: '포항시', tag: '호미곶 해돋이와 죽도시장', a: { nature: .45, sea: .9, food: .75, active: .5, city: .5, history: .2, far: .7 } },
-    { p: '경상북도', n: '울릉군', tag: '배를 타고 가는 화산섬 해안길', a: { nature: 1, sea: 1, food: .5, active: .85, city: 0, history: .2, far: 1 } },
-    { p: '경상남도', n: '통영시', tag: '케이블카와 루지, 동피랑 벽화마을', a: { nature: .55, sea: .9, food: .8, active: .75, city: .35, history: .45, far: .85 } },
-    { p: '경상남도', n: '거제시', tag: '바람의 언덕과 외도 보타니아', a: { nature: .75, sea: .95, food: .55, active: .55, city: .2, history: .15, far: .85 } },
-    { p: '경상남도', n: '남해군', tag: '다랭이마을과 독일마을', a: { nature: .85, sea: .85, food: .5, active: .35, city: 0, history: .35, far: .85 } },
-    { p: '대구광역시', n: '대구', tag: '근대골목과 막창, 서문시장', a: { nature: .15, sea: 0, food: .85, active: .4, city: .85, history: .55, far: .6 } },
-    { p: '대전광역시', n: '대전', tag: '빵 하나 사러 가는 도시', a: { nature: .2, sea: 0, food: .85, active: .3, city: .75, history: .2, far: .35 } },
-    { p: '제주특별자치도', n: '제주시', tag: '함덕·협재 해변과 동문시장', a: { nature: .8, sea: .95, food: .75, active: .6, city: .35, history: .25, far: .95 } },
-    { p: '제주특별자치도', n: '서귀포시', tag: '성산일출봉과 올레길, 헬로키티아일랜드', a: { nature: .9, sea: .95, food: .65, active: .7, city: .2, history: .25, far: .95 } }
+    { city: 'Tokyo', country: 'Japan', ko: '도쿄, 일본', lon: 139.69, lat: 35.69, tagline: '밤이 낮보다 촘촘한 도시', hint: 'Tokyo · 야경 이미지', a: { nature: .15, food: .9, active: .55, pace: .88, budget: .6, days: .3 } },
+    { city: 'Kyoto', country: 'Japan', ko: '교토, 일본', lon: 135.77, lat: 35.01, tagline: '전통과 감성이 공존하는 도시', hint: 'Kyoto · 사찰/골목 이미지', a: { nature: .45, food: .72, active: .35, pace: .5, budget: .55, days: .3 } },
+    { city: 'Bangkok', country: 'Thailand', ko: '방콕, 태국', lon: 100.5, lat: 13.75, tagline: '한 끼마다 새로운 도시', hint: 'Bangkok · 야시장 이미지', a: { nature: .15, food: .95, active: .55, pace: .82, budget: .22, days: .35 } },
+    { city: 'Chiang Mai', country: 'Thailand', ko: '치앙마이, 태국', lon: 98.99, lat: 18.79, tagline: '여유롭고 따뜻한 힐링 여행지', hint: 'Chiang Mai · 사원/산 이미지', a: { nature: .68, food: .78, active: .45, pace: .3, budget: .18, days: .6 } },
+    { city: 'Rome', country: 'Italy', ko: '로마, 이탈리아', lon: 12.5, lat: 41.9, tagline: '역사와 낭만이 살아있는 곳', hint: 'Rome · 광장/유적 이미지', a: { nature: .12, food: .85, active: .45, pace: .82, budget: .62, days: .5 } },
+    { city: 'Barcelona', country: 'Spain', ko: '바르셀로나, 스페인', lon: 2.17, lat: 41.39, tagline: '바다와 도시가 맞닿은 곳', hint: 'Barcelona · 해변/건축 이미지', a: { nature: .38, food: .8, active: .6, pace: .7, budget: .55, days: .5 } },
+    { city: 'Paris', country: 'France', ko: '파리, 프랑스', lon: 2.35, lat: 48.86, tagline: '걷는 것 자체가 목적이 되는 도시', hint: 'Paris · 거리 이미지', a: { nature: .1, food: .82, active: .35, pace: .75, budget: .82, days: .45 } },
+    { city: 'Lisbon', country: 'Portugal', ko: '리스본, 포르투갈', lon: -9.14, lat: 38.72, tagline: '언덕과 노을의 도시', hint: 'Lisbon · 언덕/트램 이미지', a: { nature: .35, food: .75, active: .5, pace: .6, budget: .45, days: .5 } },
+    { city: 'Reykjavik', country: 'Iceland', ko: '레이캬비크, 아이슬란드', lon: -21.94, lat: 64.15, tagline: '사람보다 풍경이 많은 섬', hint: 'Iceland · 오로라/설원 이미지', a: { nature: .96, food: .35, active: .8, pace: .5, budget: .9, days: .6 } },
+    { city: 'Queenstown', country: 'New Zealand', ko: '퀸스타운, 뉴질랜드', lon: 168.66, lat: -45.03, tagline: '하루 종일 활동적으로 즐기는 여행', hint: 'Queenstown · 호수/산 이미지', a: { nature: .95, food: .4, active: .96, pace: .6, budget: .8, days: .8 } },
+    { city: 'Bali', country: 'Indonesia', ko: '발리, 인도네시아', lon: 115.19, lat: -8.65, tagline: '아무것도 안 해도 되는 섬', hint: 'Bali · 해변/리조트 이미지', a: { nature: .8, food: .6, active: .55, pace: .28, budget: .35, days: .5 } },
+    { city: 'Taipei', country: 'Taiwan', ko: '타이베이, 대만', lon: 121.56, lat: 25.03, tagline: '짧게 떠나도 알찬 미식 도시', hint: 'Taipei · 야시장 이미지', a: { nature: .3, food: .9, active: .4, pace: .68, budget: .28, days: .2 } },
+    { city: 'Da Nang', country: 'Vietnam', ko: '다낭, 베트남', lon: 108.22, lat: 16.05, tagline: '바다와 로컬 음식의 균형', hint: 'Da Nang · 해변 이미지', a: { nature: .6, food: .8, active: .45, pace: .35, budget: .2, days: .3 } },
+    { city: 'Interlaken', country: 'Switzerland', ko: '인터라켄, 스위스', lon: 7.85, lat: 46.69, tagline: '창문마다 설산이 걸리는 마을', hint: 'Interlaken · 알프스 이미지', a: { nature: .96, food: .4, active: .85, pace: .5, budget: .95, days: .5 } },
+    { city: 'Osaka', country: 'Japan', ko: '오사카, 일본', lon: 135.5, lat: 34.69, tagline: '먹으러 걷고, 걷다가 또 먹는 도시', hint: 'Osaka · 도톤보리 거리 이미지', a: { nature: .15, food: .95, active: .5, pace: .8, budget: .5, days: .3 } },
+    { city: 'Sapporo', country: 'Japan', ko: '삿포로, 일본', lon: 141.35, lat: 43.06, tagline: '눈과 맥주, 게 요리가 있는 홋카이도의 관문', hint: 'Sapporo · 설경 이미지', a: { nature: .75, food: .85, active: .55, pace: .45, budget: .55, days: .4 } },
+    { city: 'Hoi An', country: 'Vietnam', ko: '호이안, 베트남', lon: 108.34, lat: 15.88, tagline: '노란 벽과 등불이 물드는 고요한 옛 도시', hint: 'Hoi An · 등불 거리 이미지', a: { nature: .55, food: .78, active: .3, pace: .3, budget: .12, days: .35 } },
+    { city: 'Phu Quoc', country: 'Vietnam', ko: '푸꾸옥, 베트남', lon: 103.96, lat: 10.22, tagline: '아무 계획 없이 바다만 보면 되는 섬', hint: 'Phu Quoc · 해변 이미지', a: { nature: .85, food: .55, active: .4, pace: .22, budget: .18, days: .45 } },
+    { city: 'Phuket', country: 'Thailand', ko: '푸켓, 태국', lon: 98.39, lat: 7.88, tagline: '해변과 나이트라이프가 공존하는 섬', hint: 'Phuket · 해변/야경 이미지', a: { nature: .78, food: .7, active: .6, pace: .45, budget: .3, days: .4 } },
+    { city: 'Siem Reap', country: 'Cambodia', ko: '시엠레아프, 캄보디아', lon: 103.84, lat: 13.37, tagline: '고대 사원 앞에서 해가 뜨는 도시', hint: 'Siem Reap · 앙코르와트 이미지', a: { nature: .5, food: .5, active: .55, pace: .4, budget: .12, days: .3 } },
+    { city: 'Singapore', country: 'Singapore', ko: '싱가포르', lon: 103.82, lat: 1.35, tagline: '깔끔한 도시 속에 세계 음식이 모이는 곳', hint: 'Singapore · 마리나베이 이미지', a: { nature: .3, food: .88, active: .4, pace: .78, budget: .78, days: .25 } },
+    { city: 'Hong Kong', country: 'China', ko: '홍콩', lon: 114.17, lat: 22.32, tagline: '홍콩식 야경과 딤섬이 있는 밤의 도시', hint: 'Hong Kong · 야경 이미지', a: { nature: .18, food: .9, active: .45, pace: .9, budget: .6, days: .25 } },
+    { city: 'Kuala Lumpur', country: 'Malaysia', ko: '쿠알라룸푸르, 말레이시아', lon: 101.69, lat: 3.14, tagline: '쌍둥이 빌딩 아래 다양한 문화가 섞인 도시', hint: 'Kuala Lumpur · 페트로나스 타워 이미지', a: { nature: .35, food: .82, active: .4, pace: .68, budget: .25, days: .3 } },
+    { city: 'Boracay', country: 'Philippines', ko: '보라카이, 필리핀', lon: 121.92, lat: 11.97, tagline: '하얀 모래사장 하나로 충분한 섬', hint: 'Boracay · 화이트비치 이미지', a: { nature: .82, food: .45, active: .55, pace: .2, budget: .3, days: .45 } },
+    { city: 'Jeju', country: 'South Korea', ko: '제주, 대한민국', kr: true, lon: 126.53, lat: 33.5, tagline: '가깝지만 완전히 다른 공기를 가진 섬', hint: 'Jeju · 오름/바다 이미지', a: { nature: .78, food: .55, active: .55, pace: .35, budget: .15, days: .15 } },
+    { city: 'Okinawa', country: 'Japan', ko: '오키나와, 일본', lon: 127.68, lat: 26.21, tagline: '일본 속의 남쪽 섬, 다른 리듬의 바다', hint: 'Okinawa · 에메랄드빛 바다 이미지', a: { nature: .8, food: .5, active: .55, pace: .3, budget: .35, days: .3 } },
+    { city: 'Santorini', country: 'Greece', ko: '산토리니, 그리스', lon: 25.46, lat: 36.39, tagline: '하얀 마을과 노을이 만나는 절벽 위 섬', hint: 'Santorini · 절벽 마을 이미지', a: { nature: .55, food: .6, active: .3, pace: .35, budget: .78, days: .5 } },
+    { city: 'Prague', country: 'Czech Republic', ko: '프라하, 체코', lon: 14.44, lat: 50.08, tagline: '동화 속 골목 같은 중세 도시', hint: 'Prague · 구시가지 이미지', a: { nature: .2, food: .55, active: .35, pace: .6, budget: .35, days: .45 } },
+    { city: 'Vienna', country: 'Austria', ko: '빈, 오스트리아', lon: 16.37, lat: 48.21, tagline: '클래식 음악과 커피 문화가 흐르는 도시', hint: 'Vienna · 궁전/카페 이미지', a: { nature: .25, food: .6, active: .3, pace: .55, budget: .6, days: .4 } },
+    { city: 'Amsterdam', country: 'Netherlands', ko: '암스테르담, 네덜란드', lon: 4.9, lat: 52.37, tagline: '운하를 따라 자전거로 걷는 도시', hint: 'Amsterdam · 운하 이미지', a: { nature: .3, food: .55, active: .5, pace: .65, budget: .68, days: .4 } },
+    { city: 'Copenhagen', country: 'Denmark', ko: '코펜하겐, 덴마크', lon: 12.57, lat: 55.68, tagline: '자전거와 디자인이 일상인 북유럽 도시', hint: 'Copenhagen · 컬러풀한 항구 이미지', a: { nature: .35, food: .65, active: .45, pace: .5, budget: .85, days: .4 } },
+    { city: 'Venice', country: 'Italy', ko: '베니스, 이탈리아', lon: 12.32, lat: 45.44, tagline: '골목 대신 운하가 길이 되는 도시', hint: 'Venice · 곤돌라 이미지', a: { nature: .2, food: .65, active: .25, pace: .5, budget: .7, days: .3 } },
+    { city: 'Istanbul', country: 'Turkey', ko: '이스탄불, 튀르키예', lon: 28.98, lat: 41.01, tagline: '두 대륙이 만나는 시장과 사원의 도시', hint: 'Istanbul · 모스크/시장 이미지', a: { nature: .2, food: .82, active: .45, pace: .78, budget: .3, days: .4 } },
+    { city: 'Dubai', country: 'UAE', ko: '두바이, 아랍에미리트', lon: 55.27, lat: 25.2, tagline: '사막 위에 세운 미래 도시', hint: 'Dubai · 스카이라인 이미지', a: { nature: .15, food: .6, active: .6, pace: .7, budget: .92, days: .3 } },
+    { city: 'Marrakesh', country: 'Morocco', ko: '마라케시, 모로코', lon: -7.98, lat: 31.63, tagline: '향신료 시장과 사막이 이어지는 도시', hint: 'Marrakesh · 메디나 시장 이미지', a: { nature: .55, food: .68, active: .55, pace: .55, budget: .25, days: .4 } },
+    { city: 'Cape Town', country: 'South Africa', ko: '케이프타운, 남아프리카공화국', lon: 18.42, lat: -33.93, tagline: '바다와 산이 한 도시 안에 있는 곳', hint: 'Cape Town · 테이블마운틴 이미지', a: { nature: .82, food: .55, active: .78, pace: .45, budget: .45, days: .55 } },
+    { city: 'New York', country: 'USA', ko: '뉴욕, 미국', lon: -74.01, lat: 40.71, tagline: '한순간도 멈추지 않는 도시', hint: 'New York · 마천루 이미지', a: { nature: .08, food: .85, active: .55, pace: .97, budget: .85, days: .4 } },
+    { city: 'Los Angeles', country: 'USA', ko: '로스앤젤레스, 미국', lon: -118.24, lat: 34.05, tagline: '해변과 도시가 함께인 여유로운 서부', hint: 'Los Angeles · 해변/스카이라인 이미지', a: { nature: .4, food: .65, active: .55, pace: .55, budget: .78, days: .45 } },
+    { city: 'Honolulu', country: 'USA', ko: '호놀룰루, 미국', lon: -157.86, lat: 21.31, tagline: '파도와 함께 시작하는 아침', hint: 'Honolulu · 와이키키 이미지', a: { nature: .82, food: .5, active: .68, pace: .35, budget: .82, days: .5 } },
+    { city: 'Sydney', country: 'Australia', ko: '시드니, 호주', lon: 151.21, lat: -33.87, tagline: '오페라하우스 아래 서핑하는 도시', hint: 'Sydney · 오페라하우스/해변 이미지', a: { nature: .55, food: .6, active: .68, pace: .55, budget: .82, days: .55 } },
+    { city: 'Cancun', country: 'Mexico', ko: '칸쿤, 멕시코', lon: -86.85, lat: 21.16, tagline: '카리브해 색의 바다가 펼쳐지는 휴양지', hint: 'Cancun · 카리브해 이미지', a: { nature: .82, food: .55, active: .55, pace: .3, budget: .55, days: .5 } },
+    // ---- 국내 (kr: true) ----
+    { city: 'Seoul', country: 'South Korea', ko: '서울, 대한민국', kr: true, lon: 126.98, lat: 37.57, tagline: '궁궐과 한강, 골목 맛집이 한 도시에', hint: 'Seoul · 경복궁/한강 이미지', a: { nature: .15, food: .9, active: .5, pace: .9, budget: .45, days: .15 } },
+    { city: 'Busan', country: 'South Korea', ko: '부산, 대한민국', kr: true, lon: 129.08, lat: 35.18, tagline: '해운대와 광안리, 돼지국밥의 바다 도시', hint: 'Busan · 광안대교 이미지', a: { nature: .35, food: .9, active: .55, pace: .75, budget: .3, days: .25 } },
+    { city: 'Gijang', country: 'South Korea', ko: '기장, 부산, 대한민국', kr: true, lon: 129.22, lat: 35.24, tagline: '바다 위 해동용궁사와 롯데월드 어드벤처 부산', hint: 'Gijang · 해동용궁사 이미지', a: { nature: .5, food: .6, active: .6, pace: .45, budget: .3, days: .2 } },
+    { city: 'Yongin', country: 'South Korea', ko: '용인, 대한민국', kr: true, lon: 127.18, lat: 37.24, tagline: '에버랜드와 한국민속촌이 있는 곳', hint: 'Yongin · 에버랜드 이미지', a: { nature: .35, food: .45, active: .75, pace: .6, budget: .35, days: .05 } },
+    { city: 'Chuncheon', country: 'South Korea', ko: '춘천, 대한민국', kr: true, lon: 127.73, lat: 37.88, tagline: '닭갈비와 소양강, 레고랜드 코리아', hint: 'Chuncheon · 소양강 이미지', a: { nature: .65, food: .8, active: .55, pace: .4, budget: .2, days: .1 } },
+    { city: 'Gangneung', country: 'South Korea', ko: '강릉, 대한민국', kr: true, lon: 128.88, lat: 37.75, tagline: '경포 바다와 안목 커피거리, 초당순두부', hint: 'Gangneung · 경포 바다 이미지', a: { nature: .6, food: .8, active: .4, pace: .4, budget: .25, days: .2 } },
+    { city: 'Sokcho', country: 'South Korea', ko: '속초, 대한민국', kr: true, lon: 128.59, lat: 38.21, tagline: '설악산과 속초관광수산시장', hint: 'Sokcho · 설악산 이미지', a: { nature: .9, food: .75, active: .65, pace: .45, budget: .25, days: .2 } },
+    { city: 'Yangyang', country: 'South Korea', ko: '양양, 대한민국', kr: true, lon: 128.62, lat: 38.08, tagline: '서핑 보드를 들고 걷는 바다 마을', hint: 'Yangyang · 서핑 해변 이미지', a: { nature: .75, food: .45, active: .95, pace: .5, budget: .25, days: .2 } },
+    { city: 'Pyeongchang', country: 'South Korea', ko: '평창, 대한민국', kr: true, lon: 128.39, lat: 37.37, tagline: '2018 동계올림픽의 스키 리조트와 대관령 목장', hint: 'Pyeongchang · 설원/목장 이미지', a: { nature: .95, food: .4, active: .9, pace: .45, budget: .4, days: .2 } },
+    { city: 'Inje', country: 'South Korea', ko: '인제, 대한민국', kr: true, lon: 128.17, lat: 38.07, tagline: '내린천 래프팅과 자작나무 숲', hint: 'Inje · 자작나무 숲 이미지', a: { nature: .95, food: .3, active: .95, pace: .4, budget: .2, days: .2 } },
+    { city: 'Danyang', country: 'South Korea', ko: '단양, 대한민국', kr: true, lon: 128.37, lat: 36.98, tagline: '패러글라이딩과 도담삼봉, 만천하스카이워크', hint: 'Danyang · 도담삼봉 이미지', a: { nature: .85, food: .45, active: .9, pace: .45, budget: .2, days: .15 } },
+    { city: 'Jeonju', country: 'South Korea', ko: '전주, 대한민국', kr: true, lon: 127.15, lat: 35.82, tagline: '한옥마을 골목과 비빔밥', hint: 'Jeonju · 한옥마을 이미지', a: { nature: .2, food: 1, active: .3, pace: .55, budget: .2, days: .15 } },
+    { city: 'Gyeongju', country: 'South Korea', ko: '경주, 대한민국', kr: true, lon: 129.22, lat: 35.86, tagline: '불국사와 대릉원, 황리단길', hint: 'Gyeongju · 불국사 이미지', a: { nature: .4, food: .65, active: .45, pace: .45, budget: .25, days: .2 } },
+    { city: 'Andong', country: 'South Korea', ko: '안동, 대한민국', kr: true, lon: 128.73, lat: 36.57, tagline: '하회마을과 안동찜닭', hint: 'Andong · 하회마을 이미지', a: { nature: .45, food: .7, active: .25, pace: .3, budget: .15, days: .15 } },
+    { city: 'Yeosu', country: 'South Korea', ko: '여수, 대한민국', kr: true, lon: 127.66, lat: 34.76, tagline: '여수 밤바다와 해상케이블카', hint: 'Yeosu · 밤바다 이미지', a: { nature: .55, food: .85, active: .5, pace: .45, budget: .3, days: .25 } },
+    { city: 'Suncheon', country: 'South Korea', ko: '순천, 대한민국', kr: true, lon: 127.49, lat: 34.95, tagline: '순천만습지 갈대밭과 국가정원', hint: 'Suncheon · 순천만 이미지', a: { nature: .95, food: .6, active: .35, pace: .3, budget: .2, days: .2 } },
+    { city: 'Damyang', country: 'South Korea', ko: '담양, 대한민국', kr: true, lon: 126.99, lat: 35.32, tagline: '죽녹원 대숲과 메타세쿼이아길', hint: 'Damyang · 대나무숲 이미지', a: { nature: .9, food: .6, active: .3, pace: .25, budget: .15, days: .15 } },
+    { city: 'Tongyeong', country: 'South Korea', ko: '통영, 대한민국', kr: true, lon: 128.43, lat: 34.85, tagline: '케이블카와 루지, 동피랑 벽화마을', hint: 'Tongyeong · 항구 이미지', a: { nature: .6, food: .8, active: .75, pace: .45, budget: .3, days: .3 } },
+    { city: 'Geoje', country: 'South Korea', ko: '거제, 대한민국', kr: true, lon: 128.62, lat: 34.88, tagline: '바람의 언덕과 외도 보타니아', hint: 'Geoje · 바람의 언덕 이미지', a: { nature: .75, food: .55, active: .55, pace: .35, budget: .3, days: .3 } },
+    { city: 'Namhae', country: 'South Korea', ko: '남해, 대한민국', kr: true, lon: 127.89, lat: 34.84, tagline: '다랭이마을과 독일마을', hint: 'Namhae · 다랭이마을 이미지', a: { nature: .85, food: .5, active: .35, pace: .2, budget: .25, days: .3 } },
+    { city: 'Ulleungdo', country: 'South Korea', ko: '울릉도, 대한민국', kr: true, lon: 130.9, lat: 37.5, tagline: '배를 타고 가는 화산섬 해안길', hint: 'Ulleungdo · 해안 절벽 이미지', a: { nature: 1, food: .5, active: .85, pace: .35, budget: .35, days: .4 } }
   ];
 
-  // ---------- 성별 보정 ----------
-  // 여성: 캐릭터 테마파크·캐릭터 숍이 있는 곳(CUTE)을, 남성: 액티비티 점수(a.active)가 높은 곳을 위로 올립니다.
-  // 점수와 가중치는 임시값입니다. 설문 데이터가 생기면 조정하세요.
+  const CITY_DOTS = [
+    ['Seoul', 126.98, 37.57], ['Tokyo', 139.69, 35.69], ['Beijing', 116.4, 39.9], ['Shanghai', 121.47, 31.23],
+    ['Taipei', 121.56, 25.03], ['Hong Kong', 114.17, 22.32], ['Bangkok', 100.5, 13.75], ['Singapore', 103.82, 1.35],
+    ['Hanoi', 105.83, 21.03], ['Delhi', 77.21, 28.61], ['Dubai', 55.27, 25.2], ['Istanbul', 28.98, 41.01],
+    ['Moscow', 37.62, 55.75], ['Rome', 12.5, 41.9], ['Paris', 2.35, 48.86], ['London', -0.13, 51.51],
+    ['Barcelona', 2.17, 41.39], ['Lisbon', -9.14, 38.72], ['Berlin', 13.4, 52.52], ['Reykjavik', -21.94, 64.15],
+    ['Cairo', 31.24, 30.04], ['Nairobi', 36.82, -1.29], ['Cape Town', 18.42, -33.93], ['Lagos', 3.38, 6.52],
+    ['New York', -74.01, 40.71], ['Toronto', -79.38, 43.65], ['Mexico City', -99.13, 19.43], ['Lima', -77.04, -12.05],
+    ['Rio', -43.17, -22.91], ['Buenos Aires', -58.38, -34.6], ['Los Angeles', -118.24, 34.05], ['Vancouver', -123.12, 49.28],
+    ['Sydney', 151.21, -33.87], ['Auckland', 174.76, -36.85], ['Queenstown', 168.66, -45.03], ['Honolulu', -157.86, 21.31],
+    ['Bali', 115.19, -8.65], ['Kathmandu', 85.32, 27.72],
+    ['Osaka', 135.5, 34.69], ['Sapporo', 141.35, 43.06], ['Hoi An', 108.34, 15.88], ['Phu Quoc', 103.96, 10.22],
+    ['Phuket', 98.39, 7.88], ['Siem Reap', 103.84, 13.37], ['Kuala Lumpur', 101.69, 3.14], ['Boracay', 121.92, 11.97],
+    ['Jeju', 126.53, 33.5], ['Okinawa', 127.68, 26.21], ['Santorini', 25.46, 36.39], ['Prague', 14.44, 50.08],
+    ['Vienna', 16.37, 48.21], ['Amsterdam', 4.9, 52.37], ['Copenhagen', 12.57, 55.68], ['Venice', 12.32, 45.44],
+    ['Marrakesh', -7.98, 31.63], ['Cancun', -86.85, 21.16],
+    ['Busan', 129.08, 35.18], ['Gangneung', 128.88, 37.75], ['Jeonju', 127.15, 35.82], ['Gyeongju', 129.22, 35.86], ['Yeosu', 127.66, 34.76]
+  ];
+
+  const MOODS = {
+    nature: 'radial-gradient(70% 60% at 22% 78%, rgba(150,210,225,.13), transparent 70%)',
+    city:   'radial-gradient(65% 60% at 78% 26%, rgba(160,195,255,.15), transparent 70%)',
+    food:   'radial-gradient(60% 55% at 50% 85%, rgba(235,210,180,.11), transparent 70%)',
+    active: 'radial-gradient(70% 60% at 82% 75%, rgba(190,225,255,.14), transparent 70%)'
+  };
+
+  const WIKI = { Tokyo: 'Tokyo', Kyoto: 'Kyoto', Bangkok: 'Bangkok', 'Chiang Mai': 'Chiang Mai', Rome: 'Rome', Barcelona: 'Barcelona', Paris: 'Paris', Lisbon: 'Lisbon', Reykjavik: 'Reykjavík', Queenstown: 'Queenstown, New Zealand', Bali: 'Bali', Taipei: 'Taipei', 'Da Nang': 'Da Nang', Interlaken: 'Interlaken',
+    Osaka: 'Osaka', Sapporo: 'Sapporo', 'Hoi An': 'Hội An', 'Phu Quoc': 'Phú Quốc', Phuket: 'Phuket', 'Siem Reap': 'Siem Reap', Singapore: 'Singapore', 'Hong Kong': 'Hong Kong', 'Kuala Lumpur': 'Kuala Lumpur', Boracay: 'Boracay', Jeju: 'Jeju Island', Okinawa: 'Okinawa Island', Santorini: 'Santorini', Prague: 'Prague', Vienna: 'Vienna', Amsterdam: 'Amsterdam', Copenhagen: 'Copenhagen', Venice: 'Venice', Istanbul: 'Istanbul', Dubai: 'Dubai', Marrakesh: 'Marrakesh', 'Cape Town': 'Cape Town', 'New York': 'New York City', 'Los Angeles': 'Los Angeles', Honolulu: 'Honolulu', Sydney: 'Sydney', Cancun: 'Cancún',
+    Seoul: 'Seoul', Busan: 'Busan', Gijang: 'Haedong Yonggungsa', Yongin: 'Everland', Chuncheon: 'Chuncheon', Gangneung: 'Gangneung', Sokcho: 'Sokcho', Yangyang: 'Yangyang County', Pyeongchang: 'Pyeongchang County', Inje: 'Inje County', Danyang: 'Danyang County', Jeonju: 'Jeonju Hanok Village', Gyeongju: 'Bulguksa', Andong: 'Hahoe Folk Village', Yeosu: 'Yeosu', Suncheon: 'Suncheon Bay', Damyang: 'Juknokwon', Tongyeong: 'Tongyeong', Geoje: 'Geoje', Namhae: 'Namhae County', Ulleungdo: 'Ulleungdo' };
+
+  // 성별 보정: 결과 화면은 그대로이고 도시 순위만 달라집니다.
+  // - 여성: 캐릭터 테마파크·캐릭터 숍이 많은 도시(CUTE 점수)를 위로 올립니다.
+  // - 남성: 액티비티 점수(a.active)가 높은 도시를 위로 올립니다.
+  // CUTE 점수와 두 가중치는 임시값입니다. 설문 데이터가 생기면 조정하세요.
   const CUTE = {
-    '경기도/용인시': 1,          // 에버랜드
-    '서울특별시/서울': .9,        // 롯데월드, 캐릭터 플래그십 스토어
-    '강원특별자치도/춘천시': .8,  // 레고랜드 코리아
-    '부산광역시/기장군': .8,      // 롯데월드 어드벤처 부산
-    '제주특별자치도/서귀포시': .7 // 헬로키티아일랜드
+    Tokyo: 1,          // 산리오 퓨로랜드, 포켓몬센터, 지브리 미술관, 도쿄 디즈니리조트
+    Osaka: .9,         // 유니버설 스튜디오 재팬(슈퍼 닌텐도 월드)
+    'Hong Kong': .8,   // 홍콩 디즈니랜드
+    Paris: .7,         // 디즈니랜드 파리
+    'Los Angeles': .7, // 디즈니랜드(애너하임)
+    Singapore: .6,     // 유니버설 스튜디오 싱가포르
+    Jeju: .6,          // 헬로키티 아일랜드
+    Yongin: 1,         // 에버랜드
+    Seoul: .9,         // 롯데월드, 캐릭터 플래그십 스토어
+    Chuncheon: .8,     // 레고랜드 코리아
+    Gijang: .8         // 롯데월드 어드벤처 부산
   };
   const GENDER_W = { f: .8, m: 1.2 };
-  const genderBias = (g, d) => g === 'f' ? GENDER_W.f * (CUTE[d.p + '/' + d.n] || 0)
-    : g === 'm' ? GENDER_W.m * Math.max(0, d.a.active - .5) * 2 : 0;
+  function genderBias(g, d) {
+    if (g === 'f') return GENDER_W.f * (CUTE[d.city] || 0);
+    if (g === 'm') return GENDER_W.m * Math.max(0, d.a.active - .5) * 2;
+    return 0;
+  }
 
-  const AXES = ['nature', 'sea', 'food', 'active', 'city', 'history', 'far'];
-  const W = { nature: 1.2, sea: 1.3, food: 1.1, active: 1.1, city: 1.1, history: 1, far: .8 };
+  const AXES = ['nature', 'food', 'active', 'pace', 'budget', 'days'];
+  const W = { nature: 1.5, food: 1.25, active: 1.05, pace: 1, budget: .8, days: .65 };
+
+  const state = { phase: 'intro', intro: 0, qi: 0, answers: [], hover: null, mood: null, picked: null, mapOut: false, step: 0, result: null, imgs: {} };
+
+  let rm = false;
+  let geo = null;
+  let ranked = null;
+  let flightTimer = null;
+  let raf = null;
+  let lastQi = null, lastStep = null, lastResult = null, lastPhase = null;
+  const timers = [];
+  const els = {};
 
   const $ = (id) => document.getElementById(id);
-  const views = ['introView', 'quizView', 'resultView'];
-  let regions = null, qi = 0, answers = [], locked = false;
+  const after = (ms, fn) => timers.push(setTimeout(fn, ms));
+  const clampNum = (min, max, v) => Math.max(min, Math.min(max, v));
 
-  const show = (id) => views.forEach((v) => { $(v).hidden = v !== id; });
-  const isMetro = (r) => !/[시군]$/.test(r.n);
-  const regionOf = (d) => regions.find((r) => r.p === d.p && r.n === d.n);
+  function setState(patch) {
+    Object.assign(state, patch);
+    render();
+  }
 
-  function drawShape(svg, shape, shadow, r) {
-    const [x0, y0, x1, y1] = r.b, bw = x1 - x0, bh = y1 - y0, size = Math.max(bw, bh), pad = size * .08;
-    svg.setAttribute('viewBox', `${x0 - pad} ${y0 - pad} ${bw + pad * 2} ${bh + pad * 2}`);
-    shape.setAttribute('d', r.d);
-    shape.setAttribute('stroke-width', (size / 160).toFixed(2));
-    if (shadow) {
-      shadow.setAttribute('d', r.d);
-      shadow.setAttribute('transform', `translate(${(size * .012).toFixed(2)} ${(size * .02).toFixed(2)})`);
+  // ---------- geography / d3 map drawing ----------
+
+  function loadGeo() {
+    const tick = (n) => {
+      if (window.d3 && window.topojson) {
+        window.d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json')
+          .then((topo) => {
+            geo = window.topojson.feature(topo, topo.objects.countries).features;
+            if (state.phase === 'map') drawHero(els.heroMap);
+            if (state.phase === 'analyze') drawAnalyze(els.analyzeMap);
+          }).catch(() => {});
+      } else if (n < 120) {
+        setTimeout(() => tick(n + 1), 100);
+      }
+    };
+    tick(0);
+  }
+
+  function projFor(el, pad) {
+    const d3 = window.d3;
+    const w = el.clientWidth || 900, h = el.clientHeight || 520;
+    const proj = d3.geoNaturalEarth1();
+    proj.fitExtent([[w * pad, h * (pad + .02)], [w * (1 - pad), h * (1 - pad - .02)]], { type: 'FeatureCollection', features: geo });
+    return { w, h, proj, path: d3.geoPath(proj) };
+  }
+
+  function drawHero(el) {
+    if (!el || !geo) return;
+    const d3 = window.d3;
+    el.innerHTML = '';
+    const mob = (el.clientWidth || 900) < 640;
+    let w, h, proj, path;
+    if (mob) {
+      w = el.clientWidth || 380; h = el.clientHeight || 600;
+      proj = d3.geoNaturalEarth1();
+      proj.fitExtent([[w * -0.06, h * 0.14], [w * 1.06, h * 0.66]], { type: 'FeatureCollection', features: geo });
+      path = d3.geoPath(proj);
+    } else {
+      ({ w, h, proj, path } = projFor(el, .03));
+    }
+    const svg = d3.select(el).append('svg').attr('width', w).attr('height', h)
+      .style('display', 'block').style('touch-action', 'pan-y');
+
+    const label = document.createElement('div');
+    label.style.cssText = "position:absolute;pointer-events:none;opacity:0;transition:opacity 260ms ease;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#eaf6ff;text-shadow:0 0 12px rgba(120,180,255,.8);white-space:nowrap;transform:translate(12px,-50%)";
+    el.appendChild(label);
+
+    const dotsG = svg.append('g').style('filter', 'drop-shadow(0 0 5px rgba(175,215,255,.9))');
+    const lands = svg.append('g');
+
+    const paths = lands.selectAll('path').data(geo).enter().append('path')
+      .attr('d', path)
+      .attr('fill', 'rgba(255,255,255,0.012)')
+      .attr('stroke', 'rgba(190,225,255,0.3)')
+      .attr('stroke-width', 0.6)
+      .attr('stroke-linejoin', 'round')
+      .style('cursor', 'crosshair');
+
+    paths.each(function () { const L = this.getTotalLength() || 1; this.style.strokeDasharray = L; this.style.strokeDashoffset = L; });
+    paths.transition().delay((d, i) => (rm ? 0 : 220 + (i % 34) * 26)).duration(rm ? 0 : 1500)
+      .ease(d3.easeCubicOut).style('stroke-dashoffset', 0);
+
+    const dots = CITY_DOTS.map((c) => {
+      const p = proj([c[1], c[2]]);
+      if (!p) return null;
+      const node = dotsG.append('circle').attr('cx', p[0]).attr('cy', p[1]).attr('r', 1.5)
+        .attr('fill', '#e8f4ff').attr('opacity', 0);
+      node.transition().delay(rm ? 0 : 120 + Math.random() * 900).duration(700).attr('opacity', .75);
+      return { x: p[0], y: p[1], node };
+    }).filter(Boolean);
+
+    paths.on('mouseenter', function (e, d) {
+      d3.select(this).interrupt().transition().duration(200)
+        .attr('stroke', '#f2f9ff').attr('stroke-width', 1.15).attr('fill', 'rgba(190,225,255,0.055)');
+      this.style.filter = 'drop-shadow(0 0 9px rgba(150,205,255,.75))';
+      label.textContent = (d.properties && d.properties.name) || '';
+      label.style.opacity = '1';
+    }).on('mouseleave', function () {
+      d3.select(this).interrupt().transition().duration(500)
+        .attr('stroke', 'rgba(190,225,255,0.3)').attr('stroke-width', .6).attr('fill', 'rgba(255,255,255,0.012)');
+      this.style.filter = 'none';
+      label.style.opacity = '0';
+    }).on('click', function (e, d) {
+      label.textContent = (d.properties && d.properties.name) || '';
+      label.style.opacity = '1';
+      const r = el.getBoundingClientRect();
+      label.style.left = (e.clientX - r.left) + 'px';
+      label.style.top = (e.clientY - r.top) + 'px';
+    });
+
+    svg.on('mousemove', (e) => {
+      const r = el.getBoundingClientRect();
+      const mx = e.clientX - r.left, my = e.clientY - r.top;
+      label.style.left = mx + 'px';
+      label.style.top = my + 'px';
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = null;
+        dots.forEach((d) => {
+          const dist = Math.hypot(d.x - mx, d.y - my);
+          const k = Math.max(0, 1 - dist / 190);
+          d.node.attr('r', 1.5 + k * 2.4).attr('opacity', .62 + k * .38);
+        });
+      });
+    });
+
+    if (!rm) flightLines(svg, proj, path);
+  }
+
+  function flightLines(svg, proj, path) {
+    const d3 = window.d3;
+    const routes = [[[126.98, 37.57], [139.69, 35.69]], [[126.98, 37.57], [2.35, 48.86]], [[126.98, 37.57], [100.5, 13.75]], [[-74.01, 40.71], [-0.13, 51.51]]];
+    const g = svg.append('g').style('pointer-events', 'none');
+    const arcs = routes.map((r, i) => {
+      const ip = d3.geoInterpolate(r[0], r[1]);
+      const line = { type: 'LineString', coordinates: d3.range(0, 1.001, 1 / 48).map(ip) };
+      const p = g.append('path').attr('d', path(line)).attr('fill', 'none')
+        .attr('stroke', 'rgba(190,225,255,.22)').attr('stroke-width', .7);
+      const L = p.node().getTotalLength() || 1;
+      p.style('stroke-dasharray', L).style('stroke-dashoffset', L)
+        .transition().delay(1500 + i * 400).duration(2000).ease(d3.easeCubicInOut).style('stroke-dashoffset', 0);
+      const comet = g.append('circle').attr('r', 1.9).attr('fill', '#fff')
+        .style('filter', 'drop-shadow(0 0 7px rgba(200,230,255,.95))').attr('opacity', 0);
+      return { node: p.node(), L, comet, offset: i * 1.7 };
+    });
+    if (flightTimer) flightTimer.stop();
+    flightTimer = d3.timer((t) => {
+      const s = t / 1000;
+      arcs.forEach((a) => {
+        const u = ((s + a.offset) % 7) / 7;
+        if (u > .92 || u < .02) { a.comet.attr('opacity', 0); return; }
+        const pt = a.node.getPointAtLength(a.L * u);
+        a.comet.attr('cx', pt.x).attr('cy', pt.y).attr('opacity', .9);
+      });
+    });
+  }
+
+  function drawAnalyze(el) {
+    if (!el || !geo) return;
+    const d3 = window.d3;
+    el.innerHTML = '';
+    const { w, h, proj, path } = projFor(el, .06);
+    const svg = d3.select(el).append('svg').attr('width', w).attr('height', h).style('display', 'block');
+    svg.append('g').selectAll('path').data(geo).enter().append('path')
+      .attr('d', path).attr('fill', 'rgba(255,255,255,0.01)')
+      .attr('stroke', 'rgba(190,225,255,0.17)').attr('stroke-width', .55).attr('opacity', 0)
+      .transition().duration(rm ? 0 : 900).attr('opacity', 1);
+
+    const g = svg.append('g');
+    const targets = (ranked || DESTS.slice(0, 5)).slice(0, 5);
+    const origin = [126.98, 37.57];
+    const op = proj(origin);
+    if (op) g.append('circle').attr('cx', op[0]).attr('cy', op[1]).attr('r', 2.2).attr('fill', '#fff')
+      .style('filter', 'drop-shadow(0 0 8px rgba(200,230,255,.9))');
+
+    targets.forEach((d, i) => {
+      const ip = d3.geoInterpolate(origin, [d.lon, d.lat]);
+      const line = { type: 'LineString', coordinates: d3.range(0, 1.001, 1 / 60).map(ip) };
+      const p = g.append('path').attr('d', path(line)).attr('fill', 'none')
+        .attr('stroke', i === 0 ? 'rgba(235,247,255,.95)' : 'rgba(190,225,255,.42)')
+        .attr('stroke-width', i === 0 ? 1.1 : .75)
+        .style('filter', 'drop-shadow(0 0 6px rgba(150,205,255,.55))');
+      const L = p.node().getTotalLength() || 1;
+      p.style('stroke-dasharray', L).style('stroke-dashoffset', L)
+        .transition().delay(rm ? 0 : 260 + i * 520).duration(rm ? 0 : 1100).ease(d3.easeCubicInOut)
+        .style('stroke-dashoffset', 0);
+      const tp = proj([d.lon, d.lat]);
+      if (!tp) return;
+      g.append('circle').attr('cx', tp[0]).attr('cy', tp[1]).attr('r', i === 0 ? 3 : 2).attr('fill', '#eaf6ff')
+        .style('filter', 'drop-shadow(0 0 9px rgba(180,220,255,.95))').attr('opacity', 0)
+        .transition().delay(rm ? 0 : 1300 + i * 520).duration(500).attr('opacity', 1);
+      g.append('text').attr('x', tp[0] + 7).attr('y', tp[1] + 3)
+        .text(d.city.toUpperCase())
+        .attr('fill', 'rgba(235,247,255,.8)')
+        .style('font-family', "'IBM Plex Mono',monospace").style('font-size', '8.5px').style('letter-spacing', '.16em')
+        .attr('opacity', 0).transition().delay(rm ? 0 : 1400 + i * 520).duration(600).attr('opacity', 1);
+    });
+  }
+
+  // ---------- destination photos (live Wikipedia fetch) ----------
+
+  function fetchImgs(dests) {
+    dests.forEach((d) => {
+      if (state.imgs[d.city]) return;
+      const title = WIKI[d.city] || d.city;
+      fetch('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(title))
+        .then((res) => (res.ok ? res.json() : null))
+        .then((j) => {
+          const url = j && ((j.originalimage && j.originalimage.source) || (j.thumbnail && j.thumbnail.source));
+          if (!url) return;
+          const page = (j.content_urls && j.content_urls.desktop && j.content_urls.desktop.page) || '';
+          state.imgs = Object.assign({}, state.imgs, { [d.city]: { url, page } });
+          renderImages();
+        }).catch(() => {});
+    });
+  }
+
+  function setSlotImage(slot, img, creditEl, city) {
+    const data = state.imgs[city];
+    if (data && data.url) {
+      if (img.getAttribute('src') !== data.url) {
+        img.classList.remove('is-loaded');
+        img.onload = () => { img.classList.add('is-loaded'); slot.classList.add('has-image'); };
+        img.src = data.url;
+      }
+      creditEl.textContent = 'Wikimedia Commons';
+      creditEl.href = data.page || '#';
+      creditEl.classList.add('is-visible');
+    } else {
+      img.removeAttribute('src');
+      img.classList.remove('is-loaded');
+      slot.classList.remove('has-image');
+      creditEl.classList.remove('is-visible');
     }
   }
 
-  function renderQuestion() {
-    const q = QUESTIONS[qi];
-    $('bar').style.width = (qi / QUESTIONS.length * 100) + '%';
-    $('count').textContent = (qi + 1) + ' / ' + QUESTIONS.length;
-    $('qKicker').textContent = q.kicker;
-    $('qTitle').textContent = q.title;
-    $('backBtn').disabled = qi === 0;
-    const box = $('options');
-    box.innerHTML = '';
-    q.options.forEach((o, i) => {
-      const b = document.createElement('button');
-      b.className = 'opt';
-      b.innerHTML = '<span class="num"></span><span></span>';
-      b.children[0].textContent = i + 1;
-      b.children[1].textContent = o.label;
-      b.addEventListener('click', () => pick(o, b));
-      box.appendChild(b);
+  function renderImages() {
+    if (!state.result) return;
+    setSlotImage(els.heroSlot, els.heroImg, els.heroCredit, state.result.dest.city);
+    state.result.alts.forEach((a, i) => {
+      const card = els.altsGrid.children[i];
+      if (!card) return;
+      setSlotImage(card.querySelector('.tai-image-slot'), card.querySelector('.tai-slot-img'), card.querySelector('.tai-slot-credit'), a.city);
     });
-    const v = $('quizView'); v.style.animation = 'none'; void v.offsetWidth; v.style.animation = '';
   }
 
-  function pick(o, btn) {
-    if (locked) return;
-    locked = true;
-    btn.classList.add('picked');
-    answers = answers.slice(0, qi);
-    answers.push(o);
-    $('bar').style.width = ((qi + 1) / QUESTIONS.length * 100) + '%';
-    setTimeout(() => {
-      locked = false;
-      if (qi + 1 < QUESTIONS.length) { qi++; renderQuestion(); } else finish();
-    }, 320);
+  // ---------- flow actions ----------
+
+  function goMap() {
+    if (state.phase === 'intro') setState({ phase: 'map' });
+  }
+
+  function startQuiz() {
+    setState({ mapOut: true });
+    if (flightTimer) { flightTimer.stop(); flightTimer = null; }
+    after(rm ? 60 : 1050, () => setState({ phase: 'quiz', mapOut: false, qi: 0, answers: [], picked: null, hover: null }));
+  }
+
+  function pick(opt) {
+    if (state.picked) return;
+    const answers = state.answers.slice(0, state.qi);
+    answers.push(opt);
+    setState({ answers, picked: opt.label });
+    after(rm ? 60 : 480, () => {
+      if (state.qi + 1 < QUESTIONS.length) setState({ qi: state.qi + 1, picked: null, hover: null });
+      else finish();
+    });
+  }
+
+  function back() {
+    if (state.qi > 0) setState({ qi: state.qi - 1, picked: null, hover: null });
   }
 
   function finish() {
     const u = {};
     AXES.forEach((k) => {
-      const vals = answers.map((a) => a.vec[k]).filter((v) => v !== undefined);
+      const vals = state.answers.map((a) => a.vec[k]).filter((v) => v !== undefined);
       u[k] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : .5;
     });
-    const g = answers[0] && answers[0].gender;
-    const ranked = DESTS.map((d) => {
+    const g = (state.answers.find((a) => a.gender !== undefined) || {}).gender;
+    const sc = (state.answers.find((a) => a.scope !== undefined) || {}).scope;
+    const pool = sc === 'kr' ? DESTS.filter((d) => d.kr) : sc === 'world' ? DESTS.filter((d) => !d.kr) : DESTS;
+    const scored = pool.map((d) => {
       let dist = 0;
       AXES.forEach((k) => { dist += W[k] * Math.abs(u[k] - d.a[k]); });
-      return { d, dist: dist - genderBias(g, d) };
-    }).sort((a, b) => a.dist - b.dist).map((s) => s.d);
+      dist -= genderBias(g, d);
+      return { d, dist: Math.max(0, dist) };
+    }).sort((a, b) => a.dist - b.dist);
+    ranked = scored.map((s) => s.d);
+    const best = scored[0];
+    const match = clampNum(74, 96, Math.round(97 - best.dist * 11));
     const reasons = [];
-    answers.forEach((a) => { if (a.reason && reasons.length < 3 && !reasons.includes(a.reason)) reasons.push(a.reason); });
-    renderResult(ranked[0], ranked.slice(1, 4), reasons);
+    state.answers.forEach((a) => { if (a.reason && reasons.length < 3 && reasons.indexOf(a.reason) === -1) reasons.push(a.reason); });
+    const alts = ranked.slice(1, 4);
+    fetchImgs([best.d].concat(alts));
+    setState({ phase: 'analyze', step: 0, result: { dest: best.d, match, reasons, alts } });
+    const gap = rm ? 500 : 1550;
+    after(120, () => setState({ step: 1 }));
+    after(gap, () => setState({ step: 2 }));
+    after(gap * 2, () => setState({ step: 3 }));
+    after(gap * 2 + (rm ? 400 : 1250), () => setState({ phase: 'result' }));
   }
 
-  function renderResult(best, alts, reasons) {
-    const r = regionOf(best);
-    drawShape($('cutout'), $('cutShape'), $('cutShadow'), r);
-    const title = isMetro(r) ? r.p : r.n;
-    $('cutout').setAttribute('aria-label', title + ' 지역 모양');
-    $('rTitle').textContent = title;
-    $('rSub').textContent = isMetro(r) ? '대한민국' : r.p;
-    $('rTag').textContent = best.tag;
-    if (reasons) {
-      const ul = $('reasons'); ul.innerHTML = '';
-      reasons.forEach((t) => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
-    }
-    const box = $('alts'); box.innerHTML = '';
-    alts.forEach((d) => {
-      const ar = regionOf(d);
-      const b = document.createElement('button');
-      b.className = 'alt';
-      b.innerHTML = '<svg aria-hidden="true"><path fill="#1F3A5F" stroke="#16202A" stroke-linejoin="round"/></svg><b></b><span></span>';
-      drawShape(b.querySelector('svg'), b.querySelector('path'), null, ar);
-      b.querySelector('b').textContent = isMetro(ar) ? ar.p.replace(/(특별시|광역시|특별자치시)$/, '') : ar.n;
-      b.querySelector('span').textContent = isMetro(ar) ? '대한민국' : ar.p.replace('특별자치도', '');
-      b.setAttribute('aria-label', b.querySelector('b').textContent + ' 결과 보기');
-      b.addEventListener('click', () => renderResult(d, alts.filter((x) => x !== d).concat(best), null));
-      box.appendChild(b);
+  function restart() {
+    if (flightTimer) { flightTimer.stop(); flightTimer = null; }
+    setState({ phase: 'map', qi: 0, answers: [], picked: null, result: null, hover: null, step: 0 });
+  }
+
+  // ---------- render ----------
+
+  function replay(el, anim) {
+    if (!el) return;
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = anim;
+  }
+
+  function renderOptions(q) {
+    els.optionsList.innerHTML = '';
+    els.optionButtons = q.options.map((o, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'tai-option';
+      btn.innerHTML = '<span class="tai-option-num">' + String(i + 1).padStart(2, '0') + '</span>' +
+        '<span class="tai-option-label"></span>' +
+        '<span class="tai-option-arrow">→</span>';
+      btn.querySelector('.tai-option-label').textContent = o.label;
+      btn.addEventListener('click', () => pick(o));
+      btn.addEventListener('mouseenter', () => setState({ hover: o.label, mood: o.mood }));
+      btn.addEventListener('mouseleave', () => setState({ hover: null }));
+      els.optionsList.appendChild(btn);
+      return btn;
     });
-    show('resultView');
-    window.scrollTo(0, 0);
+    updateOptionStates(q);
   }
 
-  function start() {
-    qi = 0; answers = [];
-    if (regions) { show('quizView'); renderQuestion(); return; }
-    $('introView').hidden = true; $('loading').hidden = false;
-    fetch('regions.json').then((res) => res.json()).then((d) => {
-      regions = d.regions;
-      $('loading').hidden = true;
-      show('quizView'); renderQuestion();
-    }).catch(() => { $('loading').textContent = '지도를 불러오지 못했어요. 새로고침해 주세요.'; });
+  function updateOptionStates(q) {
+    if (!els.optionButtons) return;
+    q.options.forEach((o, i) => {
+      const btn = els.optionButtons[i];
+      if (!btn) return;
+      const active = state.hover === o.label;
+      const chosen = state.picked === o.label;
+      const dimmed = state.picked && !chosen;
+      btn.style.background = (active || chosen) ? 'rgba(190,225,255,.07)' : 'transparent';
+      btn.style.color = (active || chosen) ? '#ffffff' : 'rgba(255,255,255,.72)';
+      btn.style.transform = 'scale(' + (chosen ? '1.035' : '1') + ')';
+      btn.style.opacity = dimmed ? '.22' : '1';
+      btn.querySelector('.tai-option-arrow').style.opacity = (active || chosen) ? '1' : '0';
+    });
   }
 
-  $('startBtn').addEventListener('click', start);
-  $('retryBtn').addEventListener('click', start);
-  $('backBtn').addEventListener('click', () => { if (qi > 0 && !locked) { qi--; renderQuestion(); } });
+  function renderResult(r) {
+    const d = r.dest;
+    els.cityUpper.textContent = d.city.toUpperCase();
+    els.cityCountry.textContent = d.city + ', ' + d.country;
+    els.matchPct.textContent = r.match + '%';
+    els.destTagline.textContent = d.tagline;
+    els.ctaSub.textContent = d.ko + '에서의 며칠을 상상해 보세요.';
+    els.heroSlotHint.textContent = d.hint;
+
+    setSlotImage(els.heroSlot, els.heroImg, els.heroCredit, d.city);
+
+    els.reasonsList.innerHTML = '';
+    r.reasons.forEach((t, i) => {
+      const row = document.createElement('div');
+      row.className = 'tai-reason';
+      row.innerHTML = '<span class="tai-reason-num">' + String(i + 1).padStart(2, '0') + '</span><span class="tai-reason-text"></span>';
+      row.querySelector('.tai-reason-text').textContent = t;
+      els.reasonsList.appendChild(row);
+    });
+
+    els.altsGrid.innerHTML = '';
+    r.alts.forEach((a) => {
+      const card = document.createElement('div');
+      card.className = 'tai-alt-card';
+      card.innerHTML =
+        '<div class="tai-alt-imgwrap tai-image-slot">' +
+          '<div class="tai-slot-placeholder"><span></span></div>' +
+          '<img class="tai-slot-img" alt="">' +
+          '<a class="tai-slot-credit" target="_blank" rel="noopener"></a>' +
+        '</div>' +
+        '<div>' +
+          '<div class="tai-alt-city"></div>' +
+          '<div class="tai-alt-meta"></div>' +
+          '<div class="tai-alt-tagline"></div>' +
+        '</div>';
+      card.querySelector('.tai-slot-placeholder span').textContent = a.hint;
+      card.querySelector('.tai-alt-city').textContent = a.city;
+      card.querySelector('.tai-alt-meta').textContent = a.country.toUpperCase();
+      card.querySelector('.tai-alt-tagline').textContent = a.tagline;
+      els.altsGrid.appendChild(card);
+      setSlotImage(card.querySelector('.tai-image-slot'), card.querySelector('.tai-slot-img'), card.querySelector('.tai-slot-credit'), a.city);
+    });
+  }
+
+  const PHASE_ELS = { intro: 'phaseIntro', map: 'phaseMap', quiz: 'phaseQuiz', analyze: 'phaseAnalyze', result: 'phaseResult' };
+  const PHASE_DISPLAY = { intro: 'flex', map: 'flex', quiz: 'flex', analyze: 'flex', result: 'block' };
+  const ANALYZE_MSGS = ['', '당신의 여행 취향을 살펴보고 있어요.', '당신에게 어울리는 도시를 찾고 있어요.', '여행지가 결정되었습니다.'];
+
+  function render() {
+    const s = state;
+    const small = s.phase !== 'intro';
+
+    els.logo.style.top = small ? 'clamp(46px,7vh,74px)' : '46%';
+    const logoScale = small ? (s.phase === 'result' ? 0 : 0.34) : 1;
+    els.logo.style.transform = 'translate(-50%,-50%) scale(' + logoScale + ')';
+    els.logo.style.opacity = s.intro >= 1 ? (s.phase === 'result' ? '0' : '1') : '0';
+
+    els.tagline.style.opacity = s.intro >= 2 ? '1' : '0';
+    els.tagline.style.filter = s.intro >= 2 ? 'blur(0px)' : 'blur(10px)';
+    els.hintWrap.style.opacity = s.intro >= 3 ? '1' : '0';
+
+    const moodKey = s.hover ? s.mood : null;
+    els.moodLayer.style.background = MOODS[moodKey] || MOODS.city;
+    els.moodLayer.style.opacity = moodKey ? '1' : '0';
+
+    els.heroMap.style.transform = 'scale(' + (s.mapOut ? '0.62' : '1') + ') translateY(' + (s.mapOut ? '-4%' : '0%') + ')';
+    els.heroMap.style.opacity = s.mapOut ? '0' : '1';
+    els.mapUi.style.opacity = s.mapOut ? '0' : '1';
+
+    Object.keys(PHASE_ELS).forEach((key) => {
+      els[PHASE_ELS[key]].style.display = (s.phase === key) ? PHASE_DISPLAY[key] : 'none';
+    });
+
+    if (s.phase === 'map' && lastPhase !== 'map') {
+      replay(els.mapQ, 'tai-in 1400ms 300ms both');
+      replay(els.startQuizBtn, 'tai-in 1400ms 2200ms both');
+      if (geo) drawHero(els.heroMap);
+    }
+
+    const q = QUESTIONS[s.qi] || QUESTIONS[0];
+    els.progressFill.style.width = Math.round(((s.qi + (s.picked ? 1 : 0)) / QUESTIONS.length) * 100) + '%';
+    els.progressLabel.textContent = (s.qi + 1) + ' / ' + QUESTIONS.length;
+    els.backBtn.style.opacity = s.qi > 0 ? '1' : '0';
+
+    if (s.phase === 'quiz' && (lastQi !== s.qi || lastPhase !== 'quiz')) {
+      els.qKicker.textContent = q.kicker;
+      els.qTitle.textContent = q.title;
+      renderOptions(q);
+      replay(els.qBlock, 'tai-in 900ms both');
+      lastQi = s.qi;
+    } else if (s.phase === 'quiz') {
+      updateOptionStates(q);
+    }
+
+    els.analyzeFill.style.width = Math.round((s.step / 3) * 100) + '%';
+    if (s.phase === 'analyze' && (lastStep !== s.step || lastPhase !== 'analyze')) {
+      els.analyzeMsg.textContent = ANALYZE_MSGS[s.step] || '';
+      replay(els.analyzeMsg, 'tai-in-soft 900ms both');
+      lastStep = s.step;
+    }
+    if (s.phase === 'analyze' && lastPhase !== 'analyze' && geo) {
+      drawAnalyze(els.analyzeMap);
+    }
+
+    if (s.result && s.result !== lastResult) {
+      renderResult(s.result);
+      lastResult = s.result;
+    }
+
+    lastPhase = s.phase;
+  }
+
+  // ---------- boot ----------
+
+  function cacheEls() {
+    ['root', 'logo', 'moodLayer', 'phaseIntro', 'phaseMap', 'phaseQuiz', 'phaseAnalyze', 'phaseResult',
+      'tagline', 'hintWrap', 'beginBtn', 'heroMap', 'mapUi', 'mapQ', 'startQuizBtn',
+      'progressFill', 'progressLabel', 'qBlock', 'qKicker', 'qTitle', 'optionsList', 'backBtn',
+      'analyzeMap', 'analyzeMsg', 'analyzeFill',
+      'heroSlot', 'heroSlotHint', 'heroImg', 'heroCredit', 'cityUpper', 'cityCountry', 'matchPct',
+      'destTagline', 'reasonsList', 'altsGrid', 'ctaSub', 'restartBtn'
+    ].forEach((id) => { els[id] = $(id); });
+  }
+
+  function init() {
+    cacheEls();
+
+    els.beginBtn.addEventListener('click', goMap);
+    els.startQuizBtn.addEventListener('click', startQuiz);
+    els.backBtn.addEventListener('click', back);
+    els.restartBtn.addEventListener('click', restart);
+
+    rm = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+    loadGeo();
+    after(600, () => setState({ intro: 1 }));
+    after(2000, () => setState({ intro: 2 }));
+    after(3600, () => setState({ intro: 3 }));
+    after(rm ? 2600 : 6200, () => goMap());
+
+    const skip = () => { if (state.phase === 'intro' && state.intro >= 1) goMap(); };
+    window.addEventListener('wheel', skip, { passive: true });
+    window.addEventListener('touchstart', skip, { passive: true });
+    window.addEventListener('keydown', skip);
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (state.phase === 'map' && geo) drawHero(els.heroMap);
+        if (state.phase === 'analyze' && geo) drawAnalyze(els.analyzeMap);
+      }, 260);
+    });
+
+    render();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })();
 </script>
 </body>
