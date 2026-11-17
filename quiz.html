@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>맞춤 여행지 찾기</title>
-<meta name="description" content="몇 가지 질문에 답하면 국내와 해외 가운데 당신의 여행 성향에 맞는 여행지를 찾아드립니다.">
+<title>성향별 여행지 찾기</title>
+<meta name="description" content="간이 에니어그램 검사로 성향 유형을 알아보고, 유형에 맞는 국내·해외 여행지를 추천합니다.">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=IBM+Plex+Sans+KR:wght@200;300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -133,7 +133,13 @@ button{font:inherit;}
     </section>
 
     <section style="padding:clamp(50px,10vh,96px) clamp(20px,5vw,64px);border-top:1px solid rgba(255,255,255,.08)">
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.3em;color:rgba(255,255,255,.4)">WHY HERE</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.3em;color:rgba(255,255,255,.4)">YOUR TYPE</div>
+      <div style="margin-top:22px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap">
+        <span id="typeNum" style="font-family:'Space Grotesk',sans-serif;font-weight:400;font-size:clamp(56px,16vw,104px);line-height:.9;letter-spacing:-.03em;color:var(--ice,#cfe6ff);text-shadow:0 0 40px rgba(150,200,255,.35)"></span>
+        <div><div id="typeName" style="font-weight:300;font-size:clamp(22px,6vw,32px);color:#fff"></div><div id="typeDesc" style="margin-top:6px;font-weight:200;font-size:15px;color:rgba(255,255,255,.6)"></div></div>
+      </div>
+      <div style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:rgba(255,255,255,.3)">간이 에니어그램 검사 · 재미로 봐 주세요</div>
+      <div style="margin-top:56px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.3em;color:rgba(255,255,255,.4)">TRAVEL STYLE</div>
       <div id="reasonsList" style="margin-top:26px;display:flex;flex-direction:column;gap:0;max-width:760px"></div>
     </section>
 
@@ -159,42 +165,81 @@ button{font:inherit;}
 (function () {
   'use strict';
 
+  // Q1은 성별, Q2~Q10은 간이 에니어그램 문항입니다. 각 선택지는 유형(type 1~9) 하나를 가리키고,
+  // 유형마다 정확히 3번씩 등장합니다. 정식 에니어그램 검사가 아닌 재미용 간이 문항입니다.
   const QUESTIONS = [
     { kicker: 'Q1 / ABOUT YOU', title: '성별을 알려주세요.', options: [
       { label: '여성', mood: 'city', vec: {}, gender: 'f' },
       { label: '남성', mood: 'active', vec: {}, gender: 'm' },
       { label: '선택 안 함', mood: 'nature', vec: {}, gender: null } ] },
-    { kicker: 'Q2 / WHERE', title: '이번엔 어디로 떠나고 싶나요?', options: [
-      { label: '국내', mood: 'nature', vec: {}, scope: 'kr', reason: '가까운 국내에서 새로운 곳을 찾고 있어요.' },
-      { label: '해외', mood: 'city', vec: {}, scope: 'world', reason: '익숙한 곳을 벗어나 해외로 떠나고 싶어해요.' },
-      { label: '어디든 좋아요', mood: 'active', vec: {}, scope: null } ] },
-    { kicker: 'Q3 / MOMENT', title: '여행에서 가장 기대되는 순간은 언제인가요?', options: [
-      { label: '조용한 자연 속에서 쉬는 순간', mood: 'nature', vec: { nature: 1, pace: .2 }, reason: '여행에서 가장 먼저 조용한 자연을 찾는 편이에요.' },
-      { label: '낯선 도시를 걷는 순간', mood: 'city', vec: { nature: .05, pace: .85 }, reason: '낯선 도시의 골목을 걷는 걸 좋아해요.' },
-      { label: '맛있는 음식을 발견하는 순간', mood: 'food', vec: { food: 1, nature: .25 }, reason: '여행의 기준이 음식인 편이에요.' },
-      { label: '새로운 활동에 도전하는 순간', mood: 'active', vec: { active: 1, nature: .7 }, reason: '가만히 있기보다 활동적으로 즐기는 걸 좋아해요.' } ] },
-    { kicker: 'Q4 / PACE', title: '여행지에서의 하루를 어떻게 보내고 싶나요?', options: [
-      { label: '계획 없이, 눈 뜨는 대로', mood: 'nature', vec: { pace: .1, active: .2 }, reason: '일정 없는 하루를 가장 큰 사치로 생각해요.' },
-      { label: '하루에 딱 한 곳만 천천히', mood: 'city', vec: { pace: .45 }, reason: '하루에 한 장면이면 충분한 사람이에요.' },
-      { label: '아침부터 밤까지 부지런히', mood: 'city', vec: { pace: .95, active: .7 }, reason: '짧은 일정에서도 다양한 경험을 원하는 편이에요.' } ] },
-    { kicker: 'Q5 / TASTE', title: '여행에서 음식은 얼마나 중요하나요?', options: [
-      { label: '음식 때문에 도시를 고르기도 해요', mood: 'food', vec: { food: 1 }, reason: '먹으러 떠나는 여행을 좋아해요.' },
-      { label: '하루 한 끼는 제대로 먹고 싶어요', mood: 'food', vec: { food: .65 }, reason: '하루 한 끼는 제대로 챙기는 편이에요.' },
-      { label: '배만 채우면 괜찮아요', mood: 'active', vec: { food: .15 }, reason: '음식보다 풍경과 경험에 예산을 쓰는 편이에요.' } ] },
-    { kicker: 'Q6 / BUDGET', title: '이번 여행에 쓸 수 있는 예산은 어느 정도인가요?', options: [
-      { label: '아껴서 더 오래 머물고 싶어요', mood: 'nature', vec: { budget: .15, days: .7 }, reason: '같은 돈이면 더 오래 머무는 쪽을 골라요.' },
-      { label: '적당히 쓰고 적당히 즐기고 싶어요', mood: 'city', vec: { budget: .5 }, reason: '무리하지 않는 선에서 즐기고 싶어해요.' },
-      { label: '이번만큼은 아끼지 않을래요', mood: 'city', vec: { budget: .9 }, reason: '한 번의 경험에는 아끼지 않는 편이에요.' } ] },
-    { kicker: 'Q7 / DURATION', title: '며칠 정도 다녀올 수 있나요?', options: [
-      { label: '주말 포함 2–3일', mood: 'city', vec: { days: .12, pace: .7 }, reason: '짧게 떠나 진하게 보고 오는 걸 선호해요.' },
-      { label: '일주일 정도', mood: 'city', vec: { days: .5 }, reason: '일주일 정도의 여행 리듬이 잘 맞아요.' },
-      { label: '열흘 이상, 길게', mood: 'nature', vec: { days: .9 }, reason: '길게 머물며 그 도시의 일상에 들어가고 싶어해요.' } ] },
-    { kicker: 'Q8 / COMPANION', title: '이번엔 누구와 함께 떠나요?', options: [
-      { label: '혼자서', mood: 'nature', vec: { pace: .45 }, reason: '혼자만의 속도로 걷는 여행이 편해요.' },
-      { label: '친구와', mood: 'active', vec: { active: .7, pace: .7 }, reason: '함께 웃을 일이 많은 여행지를 좋아해요.' },
-      { label: '연인과', mood: 'food', vec: { food: .7, pace: .5 }, reason: '둘이서 오래 기억할 장면을 중요하게 생각해요.' },
-      { label: '가족과', mood: 'nature', vec: { active: .35, pace: .4 }, reason: '모두가 편안한 속도의 여행을 원해요.' } ] }
+    { kicker: 'Q2 / PLAN', title: '여행 계획을 세울 때 나는?', options: [
+      { label: '일정표를 꼼꼼히 짜야 마음이 놓여요', mood: 'city', vec: {}, type: 1 },
+      { label: '일행이 가고 싶은 곳부터 챙겨요', mood: 'food', vec: {}, type: 2 },
+      { label: '남들이 부러워할 핫플부터 찾아요', mood: 'city', vec: {}, type: 3 } ] },
+    { kicker: 'Q3 / ATTRACTION', title: '여행지에서 가장 끌리는 건?', options: [
+      { label: '나만 아는 분위기 있는 장소', mood: 'nature', vec: {}, type: 4 },
+      { label: '그곳의 역사와 숨은 이야기', mood: 'city', vec: {}, type: 5 },
+      { label: '후기가 많고 검증된 곳', mood: 'food', vec: {}, type: 6 } ] },
+    { kicker: 'Q4 / FRIENDS', title: '친구들이 말하는 나는?', options: [
+      { label: '늘 새로운 재미를 찾는 사람', mood: 'active', vec: {}, type: 7 },
+      { label: '앞장서서 결정하는 사람', mood: 'active', vec: {}, type: 8 },
+      { label: '누구와도 잘 맞추는 편한 사람', mood: 'nature', vec: {}, type: 9 } ] },
+    { kicker: 'Q5 / TROUBLE', title: '여행 중 예상 못한 문제가 생기면?', options: [
+      { label: '원칙대로 차근차근 해결해요', mood: 'city', vec: {}, type: 1 },
+      { label: '내가 먼저 나서서 해결해요', mood: 'active', vec: {}, type: 8 },
+      { label: '미리 준비한 플랜 B를 꺼내요', mood: 'city', vec: {}, type: 6 } ] },
+    { kicker: 'Q6 / HAPPY', title: '여행에서 가장 행복한 순간은?', options: [
+      { label: '함께 간 사람이 즐거워할 때', mood: 'food', vec: {}, type: 2 },
+      { label: '새로운 걸 잔뜩 경험할 때', mood: 'active', vec: {}, type: 7 },
+      { label: '아무 걱정 없이 늘어져 있을 때', mood: 'nature', vec: {}, type: 9 } ] },
+    { kicker: 'Q7 / PHOTO', title: '여행 사진을 찍는다면?', options: [
+      { label: '잘 나온 사진을 골라 바로 SNS에', mood: 'city', vec: {}, type: 3 },
+      { label: '감성 가득한 나만의 구도로', mood: 'nature', vec: {}, type: 4 },
+      { label: '사진보다 눈으로 오래 관찰해요', mood: 'nature', vec: {}, type: 5 } ] },
+    { kicker: 'Q8 / FREE DAY', title: '일정 없는 하루가 생기면?', options: [
+      { label: '미뤄 둔 책이나 박물관을 찾아요', mood: 'city', vec: {}, type: 5 },
+      { label: '세워 둔 목표 코스를 끝까지 해내요', mood: 'active', vec: {}, type: 3 },
+      { label: '익숙한 단골 가게로 가요', mood: 'food', vec: {}, type: 6 } ] },
+    { kicker: 'Q9 / DISLIKE', title: '가장 싫은 여행은?', options: [
+      { label: '엉망진창 즉흥 여행', mood: 'city', vec: {}, type: 1 },
+      { label: '나만 겉도는 여행', mood: 'food', vec: {}, type: 2 },
+      { label: '누구나 하는 뻔한 여행', mood: 'nature', vec: {}, type: 4 } ] },
+    { kicker: 'Q10 / WHY', title: '여행을 떠나는 이유는?', options: [
+      { label: '지루한 일상에서 벗어나려고', mood: 'active', vec: {}, type: 7 },
+      { label: '내 한계를 시험해 보려고', mood: 'active', vec: {}, type: 8 },
+      { label: '마음의 평화를 찾으려고', mood: 'nature', vec: {}, type: 9 } ] }
   ];
+
+  // 에니어그램 유형별 여행 성향. vec는 여행지 점수(a)와 같은 축이며 임시값입니다.
+  const TYPES = {
+    1: { name: '개혁가', desc: '원칙과 질서를 중시하는 완벽주의자', vec: { nature: .3, food: .6, active: .4, pace: .65, budget: .55, days: .4 },
+      reasons: ['계획대로 흘러가는 깔끔한 여행을 좋아해요.', '역사와 문화가 잘 정돈된 도시에서 만족감을 느껴요.', '거리와 교통이 정돈된 곳이 잘 맞아요.'] },
+    2: { name: '조력가', desc: '사람을 먼저 챙기는 다정한 사람', vec: { nature: .4, food: .9, active: .4, pace: .5, budget: .4, days: .35 },
+      reasons: ['함께 간 사람이 즐거워야 나도 행복해요.', '같이 나눠 먹을 맛있는 음식이 중요해요.', '따뜻하고 친근한 분위기의 여행지가 잘 맞아요.'] },
+    3: { name: '성취가', desc: '목표를 향해 달리는 에너지 넘치는 사람', vec: { nature: .15, food: .8, active: .6, pace: .95, budget: .85, days: .3 },
+      reasons: ['짧은 시간에 많은 걸 해내는 여행을 좋아해요.', '화제의 핫플과 멋진 스카이라인에 끌려요.', '이왕 가는 여행이면 제대로, 근사하게 즐기고 싶어해요.'] },
+    4: { name: '예술가', desc: '자기만의 감성이 뚜렷한 개성파', vec: { nature: .45, food: .65, active: .3, pace: .45, budget: .6, days: .55 },
+      reasons: ['남들과 다른, 분위기 있는 장소를 찾아요.', '노을과 골목, 오래된 건물처럼 감성을 건드리는 풍경을 좋아해요.', '천천히 머물며 그곳의 정서를 느끼는 여행이 맞아요.'] },
+    5: { name: '사색가', desc: '관찰하고 이해하는 걸 즐기는 탐구자', vec: { nature: .65, food: .4, active: .35, pace: .35, budget: .45, days: .65 },
+      reasons: ['사람 많은 곳보다 조용히 둘러볼 수 있는 곳이 좋아요.', '유적과 박물관, 대자연처럼 알아갈 거리가 많은 곳에 끌려요.', '혼자만의 시간이 충분한 긴 여행이 잘 맞아요.'] },
+    6: { name: '충성가', desc: '신중하고 믿음직한 사람', vec: { nature: .35, food: .75, active: .35, pace: .5, budget: .35, days: .2 },
+      reasons: ['안전하고 검증된 여행지에서 마음이 편해요.', '가깝고 익숙한 곳에서 부담 없이 즐기고 싶어해요.', '교통과 숙소가 편리한 곳이 잘 맞아요.'] },
+    7: { name: '열정가', desc: '새로운 재미를 쫓는 낙천주의자', vec: { nature: .45, food: .9, active: .85, pace: .9, budget: .45, days: .45 },
+      reasons: ['하루에도 여러 가지 경험을 하고 싶어해요.', '먹거리, 볼거리, 놀거리가 가득한 곳이 좋아요.', '지루할 틈 없는 활기찬 여행지가 잘 맞아요.'] },
+    8: { name: '도전자', desc: '강한 추진력을 가진 리더', vec: { nature: .9, food: .45, active: .95, pace: .65, budget: .7, days: .6 },
+      reasons: ['몸으로 부딪치는 강렬한 경험을 원해요.', '거대한 자연 앞에서 한계를 시험하는 여행을 좋아해요.', '스케일 큰 풍경과 액티비티가 잘 맞아요.'] },
+    9: { name: '평화주의자', desc: '느긋하고 편안함을 사랑하는 사람', vec: { nature: .8, food: .55, active: .15, pace: .15, budget: .35, days: .5 },
+      reasons: ['아무것도 하지 않아도 되는 여행을 좋아해요.', '바다나 숲처럼 마음이 편해지는 풍경에 끌려요.', '일정 없이 천천히 쉬는 여행이 잘 맞아요.'] }
+  };
+
+  // 가장 많이 고른 유형. 동점이면 동점인 유형 가운데 무작위로 고릅니다(문항 순서에 따른 쏠림 방지).
+  function topType(answers, rnd = Math.random) {
+    const cnt = {};
+    answers.forEach((a) => { if (a.type) cnt[a.type] = (cnt[a.type] || 0) + 1; });
+    const max = Math.max(0, ...Object.values(cnt));
+    const tied = Object.keys(cnt).map(Number).filter((t) => cnt[t] === max);
+    return tied.length ? tied[Math.floor(rnd() * tied.length)] : 9;
+  }
 
   const DESTS = [
     { city: 'Tokyo', country: 'Japan', ko: '도쿄, 일본', lon: 139.69, lat: 35.69, tagline: '밤이 낮보다 촘촘한 도시', hint: 'Tokyo · 야경 이미지', a: { nature: .15, food: .9, active: .55, pace: .88, budget: .6, days: .3 } },
@@ -593,15 +638,10 @@ button{font:inherit;}
   }
 
   function finish() {
-    const u = {};
-    AXES.forEach((k) => {
-      const vals = state.answers.map((a) => a.vec[k]).filter((v) => v !== undefined);
-      u[k] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : .5;
-    });
+    const t = topType(state.answers);
+    const u = TYPES[t].vec;
     const g = (state.answers.find((a) => a.gender !== undefined) || {}).gender;
-    const sc = (state.answers.find((a) => a.scope !== undefined) || {}).scope;
-    const pool = sc === 'kr' ? DESTS.filter((d) => d.kr) : sc === 'world' ? DESTS.filter((d) => !d.kr) : DESTS;
-    const scored = pool.map((d) => {
+    const scored = DESTS.map((d) => {
       let dist = 0;
       AXES.forEach((k) => { dist += W[k] * Math.abs(u[k] - d.a[k]); });
       dist -= genderBias(g, d);
@@ -610,11 +650,10 @@ button{font:inherit;}
     ranked = scored.map((s) => s.d);
     const best = scored[0];
     const match = clampNum(74, 96, Math.round(97 - best.dist * 11));
-    const reasons = [];
-    state.answers.forEach((a) => { if (a.reason && reasons.length < 3 && reasons.indexOf(a.reason) === -1) reasons.push(a.reason); });
+    const reasons = TYPES[t].reasons;
     const alts = ranked.slice(1, 4);
     fetchImgs([best.d].concat(alts));
-    setState({ phase: 'analyze', step: 0, result: { dest: best.d, match, reasons, alts } });
+    setState({ phase: 'analyze', step: 0, result: { dest: best.d, match, reasons, alts, type: t } });
     const gap = rm ? 500 : 1550;
     after(120, () => setState({ step: 1 }));
     after(gap, () => setState({ step: 2 }));
@@ -672,6 +711,10 @@ button{font:inherit;}
 
   function renderResult(r) {
     const d = r.dest;
+    const ty = TYPES[r.type];
+    els.typeNum.textContent = r.type + '번';
+    els.typeName.textContent = ty.name;
+    els.typeDesc.textContent = ty.desc;
     els.cityUpper.textContent = d.city.toUpperCase();
     els.cityCountry.textContent = d.city + ', ' + d.country;
     els.matchPct.textContent = r.match + '%';
@@ -716,7 +759,7 @@ button{font:inherit;}
 
   const PHASE_ELS = { intro: 'phaseIntro', map: 'phaseMap', quiz: 'phaseQuiz', analyze: 'phaseAnalyze', result: 'phaseResult' };
   const PHASE_DISPLAY = { intro: 'flex', map: 'flex', quiz: 'flex', analyze: 'flex', result: 'block' };
-  const ANALYZE_MSGS = ['', '당신의 여행 취향을 살펴보고 있어요.', '당신에게 어울리는 도시를 찾고 있어요.', '여행지가 결정되었습니다.'];
+  const ANALYZE_MSGS = ['', '당신의 성향 유형을 살펴보고 있어요.', '유형에 어울리는 여행지를 찾고 있어요.', '여행지가 결정되었습니다.'];
 
   function render() {
     const s = state;
@@ -790,7 +833,7 @@ button{font:inherit;}
       'progressFill', 'progressLabel', 'qBlock', 'qKicker', 'qTitle', 'optionsList', 'backBtn',
       'analyzeMap', 'analyzeMsg', 'analyzeFill',
       'heroSlot', 'heroSlotHint', 'heroImg', 'heroCredit', 'cityUpper', 'cityCountry', 'matchPct',
-      'destTagline', 'reasonsList', 'altsGrid', 'ctaSub', 'restartBtn'
+      'destTagline', 'reasonsList', 'typeNum', 'typeName', 'typeDesc', 'altsGrid', 'ctaSub', 'restartBtn'
     ].forEach((id) => { els[id] = $(id); });
   }
 
