@@ -41,6 +41,8 @@
   .names .shot { margin-top: 4px; font-size: 13px; }
   .go-btn { display: flex; align-items: center; justify-content: center; gap: 8px; height: 56px; border-radius: 14px; background: var(--navy); color: #fff; font-size: 18px; font-weight: 700; text-decoration: none; }
   .go-btn:hover { background: #0F2440; }
+  .go-btn.alt { background: var(--accent); }
+  .go-btn.alt:hover { background: var(--accent-dark); }
   .sea { height: 200px; border-radius: 16px; background: var(--sea); display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; text-align: center; padding: 16px; }
   .sea p { margin: 0; font-size: 18px; font-weight: 700; color: var(--navy); }
   .sea .shot { font-size: 13px; font-weight: 400; color: #3B4F63; }
@@ -96,6 +98,10 @@
         <div class="names"><p id="hitSub"></p><h2 id="hitTitle"></h2><p class="shot" id="hitShot"></p></div>
         <a class="go-btn" href="https://triponline-topaz.vercel.app/" target="_blank" rel="noopener noreferrer">
           <span>triponline</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>
+        </a>
+        <a class="go-btn alt" href="https://trip-ai-rho.vercel.app/" target="_blank" rel="noopener noreferrer">
+          <span>사용자 맞춤 여행지 찾기</span>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>
         </a>
       </div>
