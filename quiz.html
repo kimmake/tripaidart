@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>성향별 여행지 찾기</title>
-<meta name="description" content="간이 에니어그램 검사로 성향 유형을 알아보고, 유형에 맞는 국내·해외 여행지를 추천합니다.">
+<meta name="description" content="간단한 성향 검사로 나의 여행 성향을 알아보고, 성향에 맞는 국내·해외 여행지를 추천합니다.">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=IBM+Plex+Sans+KR:wght@200;300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -134,11 +134,11 @@ button{font:inherit;}
 
     <section style="padding:clamp(50px,10vh,96px) clamp(20px,5vw,64px);border-top:1px solid rgba(255,255,255,.08)">
       <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.3em;color:rgba(255,255,255,.4)">YOUR TYPE</div>
-      <div style="margin-top:22px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap">
-        <span id="typeNum" style="font-family:'Space Grotesk',sans-serif;font-weight:400;font-size:clamp(56px,16vw,104px);line-height:.9;letter-spacing:-.03em;color:var(--ice,#cfe6ff);text-shadow:0 0 40px rgba(150,200,255,.35)"></span>
-        <div><div id="typeName" style="font-weight:300;font-size:clamp(22px,6vw,32px);color:#fff"></div><div id="typeDesc" style="margin-top:6px;font-weight:200;font-size:15px;color:rgba(255,255,255,.6)"></div></div>
+      <div style="margin-top:22px">
+        <div id="typeName" style="font-weight:300;font-size:clamp(26px,7vw,40px);color:#fff;text-shadow:0 0 30px rgba(150,200,255,.25)"></div>
+        <div id="typeDesc" style="margin-top:8px;font-weight:200;font-size:15px;color:rgba(255,255,255,.6)"></div>
       </div>
-      <div style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:rgba(255,255,255,.3)">간이 에니어그램 검사 · 재미로 봐 주세요</div>
+      <div id="typeChart" role="img" style="margin-top:40px;max-width:420px;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(14px,4vw,28px);align-items:end"></div>
       <div style="margin-top:56px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.3em;color:rgba(255,255,255,.4)">TRAVEL STYLE</div>
       <div id="reasonsList" style="margin-top:26px;display:flex;flex-direction:column;gap:0;max-width:760px"></div>
     </section>
@@ -165,8 +165,8 @@ button{font:inherit;}
 (function () {
   'use strict';
 
-  // Q1은 성별, Q2~Q10은 간이 에니어그램 문항입니다. 각 선택지는 유형(type 1~9) 하나를 가리키고,
-  // 유형마다 정확히 3번씩 등장합니다. 정식 에니어그램 검사가 아닌 재미용 간이 문항입니다.
+  // Q1은 성별, Q2~Q10은 간이 성향 문항입니다. 각 선택지는 유형(type 1~9) 하나를 가리키고,
+  // 유형마다 정확히 3번씩 등장합니다. 정식 심리 검사가 아닌 재미용 간이 문항입니다.
   const QUESTIONS = [
     { kicker: 'Q1 / ABOUT YOU', title: '성별을 알려주세요.', options: [
       { label: '여성', mood: 'city', vec: {}, gender: 'f' },
@@ -210,7 +210,7 @@ button{font:inherit;}
       { label: '마음의 평화를 찾으려고', mood: 'nature', vec: {}, type: 9 } ] }
   ];
 
-  // 에니어그램 유형별 여행 성향. vec는 여행지 점수(a)와 같은 축이며 임시값입니다.
+  // 성향 유형별 여행 성향. vec는 여행지 점수(a)와 같은 축이며 임시값입니다.
   const TYPES = {
     1: { name: '개혁가', desc: '원칙과 질서를 중시하는 완벽주의자', vec: { nature: .3, food: .6, active: .4, pace: .65, budget: .55, days: .4 },
       reasons: ['계획대로 흘러가는 깔끔한 여행을 좋아해요.', '역사와 문화가 잘 정돈된 도시에서 만족감을 느껴요.', '거리와 교통이 정돈된 곳이 잘 맞아요.'] },
@@ -231,6 +231,13 @@ button{font:inherit;}
     9: { name: '평화주의자', desc: '느긋하고 편안함을 사랑하는 사람', vec: { nature: .8, food: .55, active: .15, pace: .15, budget: .35, days: .5 },
       reasons: ['아무것도 하지 않아도 되는 여행을 좋아해요.', '바다나 숲처럼 마음이 편해지는 풍경에 끌려요.', '일정 없이 천천히 쉬는 여행이 잘 맞아요.'] }
   };
+
+  function typeCounts(answers) {
+    const cnt = {};
+    for (let i = 1; i <= 9; i++) cnt[i] = 0;
+    answers.forEach((a) => { if (a.type) cnt[a.type]++; });
+    return cnt;
+  }
 
   // 가장 많이 고른 유형. 동점이면 동점인 유형 가운데 무작위로 고릅니다(문항 순서에 따른 쏠림 방지).
   function topType(answers, rnd = Math.random) {
@@ -653,7 +660,7 @@ button{font:inherit;}
     const reasons = TYPES[t].reasons;
     const alts = ranked.slice(1, 4);
     fetchImgs([best.d].concat(alts));
-    setState({ phase: 'analyze', step: 0, result: { dest: best.d, match, reasons, alts, type: t } });
+    setState({ phase: 'analyze', step: 0, result: { dest: best.d, match, reasons, alts, type: t, counts: typeCounts(state.answers) } });
     const gap = rm ? 500 : 1550;
     after(120, () => setState({ step: 1 }));
     after(gap, () => setState({ step: 2 }));
@@ -709,10 +716,42 @@ button{font:inherit;}
     });
   }
 
+  // 높은 성향 2개, 낮은 성향 2개를 막대로 그립니다. 막대 아래에는 번호만 작게 표시합니다.
+  // 유형마다 문항이 3개라서 점수 = 고른 횟수 / 3 입니다.
+  function renderChart(counts, top) {
+    const ids = Object.keys(counts).map(Number);
+    const shuffle = (arr) => arr.map((v) => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map((x) => x[1]);
+    const desc = shuffle(ids.filter((i) => i !== top)).sort((x, y) => counts[y] - counts[x]);
+    const bars = [top, desc[0], desc[desc.length - 2], desc[desc.length - 1]];
+    const H = 150;
+    els.typeChart.innerHTML = '';
+    els.typeChart.setAttribute('aria-label', '높은 성향 2개와 낮은 성향 2개 그래프');
+    bars.forEach((id, i) => {
+      const pct = counts[id] / 3;
+      const high = i < 2;
+      const col = document.createElement('div');
+      col.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:10px';
+      const track = document.createElement('div');
+      track.style.cssText = 'position:relative;width:100%;max-width:44px;height:' + H + 'px;border-radius:6px;background:rgba(255,255,255,.04);overflow:hidden';
+      const fill = document.createElement('div');
+      fill.style.cssText = 'position:absolute;left:0;right:0;bottom:0;height:0;border-radius:6px;transition:height 1200ms cubic-bezier(.2,.8,.2,1) ' + (300 + i * 140) + 'ms;' +
+        (high ? 'background:linear-gradient(to top,rgba(150,200,255,.55),#eaf6ff);box-shadow:0 0 18px rgba(150,205,255,.55)'
+              : 'background:rgba(190,225,255,.22)');
+      track.appendChild(fill);
+      const num = document.createElement('div');
+      num.textContent = id;
+      num.style.cssText = "font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;color:" + (high ? 'rgba(234,246,255,.75)' : 'rgba(255,255,255,.32)');
+      col.appendChild(track);
+      col.appendChild(num);
+      els.typeChart.appendChild(col);
+      requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.height = Math.max(pct * 100, 3) + '%'; }));
+    });
+  }
+
   function renderResult(r) {
     const d = r.dest;
     const ty = TYPES[r.type];
-    els.typeNum.textContent = r.type + '번';
+    renderChart(r.counts, r.type);
     els.typeName.textContent = ty.name;
     els.typeDesc.textContent = ty.desc;
     els.cityUpper.textContent = d.city.toUpperCase();
@@ -833,7 +872,7 @@ button{font:inherit;}
       'progressFill', 'progressLabel', 'qBlock', 'qKicker', 'qTitle', 'optionsList', 'backBtn',
       'analyzeMap', 'analyzeMsg', 'analyzeFill',
       'heroSlot', 'heroSlotHint', 'heroImg', 'heroCredit', 'cityUpper', 'cityCountry', 'matchPct',
-      'destTagline', 'reasonsList', 'typeNum', 'typeName', 'typeDesc', 'altsGrid', 'ctaSub', 'restartBtn'
+      'destTagline', 'reasonsList', 'typeName', 'typeDesc', 'typeChart', 'altsGrid', 'ctaSub', 'restartBtn'
     ].forEach((id) => { els[id] = $(id); });
   }
 
